@@ -1,0 +1,29 @@
+App Location :  E:\SEM
+you find SEM. open it with VS code.
+open the terminal pressing the keys CTRL+ Shift+ ` (3 keys)
+In terminal type npm start
+then the app will run both frontend, server with database
+
+URL: localhost:3000/login
+
+user Index
+
+admin
+44956
+
+
+Level_2 users index
+
+44958, 41909 (Test@123#)
+
+Level_1 Users index
+
+44957, 44959,44962
+
+Infra Db Team
+44960
+BS IT Team
+44961
+
+
+Mahbub143@

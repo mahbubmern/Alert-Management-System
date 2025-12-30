@@ -1,0 +1,36 @@
+.sidebar-menu ul ul {
+  display: none;
+}
+
+.sidebar-menu li.submenu ul {
+  padding-left: 20px;
+}
+
+.sidebar-menu li.submenu a.subdrop + ul {
+  display: block;
+}
+/* .user-menu.nav > li > a .badge {
+  background-color: #a09b9b;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 10px;
+  min-width: 10px;
+  color: #ffffff;
+  position: absolute;
+  top: 9px;
+  right: -2px;
+} */
+
+.user-menu.nav > li > a .badge1 {
+  background-color: #ff0000;
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 9px;
+  min-width: 9px;
+  color: #ffffff;
+  position: absolute;
+  top: 20px;
+  right: 45px;
+}

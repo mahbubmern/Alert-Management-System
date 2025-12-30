@@ -1,0 +1,113 @@
+/* Assuming you have a class or ID to target your table, let's use .custom-table for this example */
+
+.custom-table {
+  height: 400px; /* Set the height to 400px */
+  overflow-y: auto; /* Add vertical scroll when content exceeds the height */
+}
+
+/* Optionally, you may want to set a fixed height for the table header to keep it visible while scrolling */
+
+.custom-table thead {
+  display: block;
+}
+
+/* You might also want to specify a height for the table body to ensure consistent scrolling */
+
+.custom-table tbody {
+  display: block;
+  height: calc(
+    100% - 40px
+  ); /* Subtract the height of the header (adjust as needed) */
+  overflow-y: auto;
+}
+
+/* Ensure table rows and cells are displayed as intended */
+
+.custom-table tr {
+  display: table-row;
+}
+
+.custom-table td,
+.custom-table th {
+  padding: 8px; /* Adjust padding as needed */
+  vertical-align: top; /* Align content to the top of cells */
+  border-bottom: 1px solid #ddd; /* Add bottom border for separation */
+  white-space: nowrap; /* Prevent wrapping of text */
+}
+
+.todo-container {
+  padding-left: 20px;
+  padding-right: 10px;
+  padding-top: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: #f4f4f4;
+}
+
+.form-container input[type="text"] {
+  width: 100%;
+  border: 1px solid #bebebe;
+  padding: 5px 12px;
+  background-color: lightyellow;
+}
+.save-button {
+  border: none;
+  font-size: 13px;
+  padding: 7px 12px;
+  background-color: rgb(209, 193, 10);
+}
+
+.task-list-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid #e9e9e9;
+  margin: 7px 0px;
+  background-color: #edeaea;
+}
+.left-item {
+  flex: 1; /* Take up available space */
+}
+
+.right-item {
+  flex-shrink: 0; /* Don't allow shrinking */
+  display: flex;
+  gap: 5px; /* Add some space between buttons */
+}
+
+.pdf-container {
+  position: fixed;
+  top: 8%;
+  left: 0;
+  width: 100%;
+  height: 92%;
+  background-color: #fff; /* Set a background color if necessary */
+  z-index: 9999; /* Ensure the PDF is displayed above other content */
+}
+
+.pdf-embed {
+  width: 100%;
+  height: 100%;
+}
+
+/* Make table rows smaller */
+.table-sm tbody tr td,
+.table-sm tbody tr th {
+  padding: 0.15rem 0.15rem; /* reduce padding */
+  line-height: 0.4;       /* tighten row height */
+  font-size: 0.85rem;     /* smaller font if needed */
+  vertical-align: middle !important;
+}
+
+.table-sm thead th {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 0.4;
+}
+

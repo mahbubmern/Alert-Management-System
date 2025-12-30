@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+div.dt-buttons > .dt-button,
+div.dt-buttons > div.dt-button-split .dt-button {
+  padding: 0.5em 0.5em;
+}
+div.dt-container .dt-search input {
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  padding: 2px;
+  background-color: transparent;
+  color: inherit;
+  margin-left: 10px;
+}
+
+div.dt-container .dt-paging .dt-paging-button {
+  padding: 0.1em 0.1em;
+  margin-left: 1px;
+}
+table.dataTable > tbody > tr > th,
+table.dataTable > tbody > tr > td {
+  padding: 5px 10px;
+}
+/* svg {
+  vertical-align: middle;
+  color: #163564;
+  width: 40px;
+} */
+.datetime-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.css-1dyz3mf {
+
+    padding: 0px 8px !important;
+    
+}
+.subject-column {
+  position: relative;
+  max-width: 150px; /* Set the width you prefer */
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.subject-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  width: 100%;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.subject-column:hover .tooltip {
+  content: attr(title); /* Display the full text */
+  position: absolute;
+  background-color: rgb(107, 107, 107);
+  color: white;
+  padding: 10px 10px;
+  border-radius: 5px;
+  top: -70px; /* Position the tooltip above the text */
+  left: 125%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  font-size: 14px;
+  line-height: 1.2;
+  width: max-content;
+  max-width: 400px;
+  text-align: center;
+  visibility: visible;
+  opacity: 1;
+}
+
+.subject-column:hover .tooltip::before {
+  content: "";
+  position: absolute;
+  top: 36px; /* Adjust this value to move the arrow up or down */
+  left: 25%;
+  transform: translateX(-50%);
+  border-width: 8px;
+  border-style: solid;
+  border-color: rgb(107, 107, 107) transparent transparent transparent; /* Create the downward arrow */
+  z-index: 9998;
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip {
+  display: none;
+}
+
+.subject-column:hover .tooltip {
+  display: block;
+}
+
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-in forwards;
+}
+
+@media print {
+  * {
+    background: white !important;
+    background-color: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}
+
+/* scrollbar-thin (Tailwind plugin needed) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.7);
+  border-radius: 4px;
+}
+html, body {
+  height: 100%;
+  background-color: #1f2937; /* Tailwind gray-800 */
+}
+
+
+

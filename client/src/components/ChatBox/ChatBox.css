@@ -1,0 +1,123 @@
+.chatbox {
+  position: fixed;
+  bottom: 70px;
+  right: 20px;
+  width: 280px;
+  max-height: 350px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  font-size: 13px; /* Smaller text globally */
+}
+
+.chatbox.open {
+  display: flex;
+}
+
+.chatbox-header {
+  background-color: #1db9aa;
+  color: white;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.chatbox-body {
+  padding: 8px;
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.chatbox-footer {
+  display: flex;
+  padding: 8px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+}
+
+.chatbox-footer input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.chatbox-footer button {
+  margin-left: 5px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #1db9aa;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* .chat-message {
+  background: #e0e0e0;
+  padding: 2px 8px;
+  margin-bottom: 4px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1;
+} */
+
+.chat-message {
+  max-width: 80%;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.chatbox-close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.chatbox-close-btn:hover {
+  color: #ff4d4d; /* Stylish red on hover */
+}
+
+
+/* Left (other user) */
+.chat-message.received {
+  align-self: flex-start;
+  background-color: #e0e0e0;
+  text-align: left;
+}
+
+/* Right (current user) */
+.chat-message.sent {
+  align-self: flex-end;
+  background-color: #cdeffc;
+  text-align: left;
+}
+
+/* Background variations based on role */
+.chat-message.admin-role {
+  background-color: #ffcdd2; /* light red */
+}
+
+.chat-message.pa-role {
+  background-color: #d1c4e9; /* light purple */
+}
+
+.chat-message.user-role {
+  background-color: #bbdefb; /* light blue */
+}

@@ -1,0 +1,40 @@
+/* Reduce row height */
+table.dataTable tbody tr {
+    height: 2px; /* Adjust as needed */
+  }
+  
+  /* Reduce font size */
+  table.dataTable {
+    font-size: 13px; /* Adjust as needed */
+  }
+  
+  /* Optional: Reduce padding in cells */
+  table.dataTable td {
+    padding: 4px 8px; /* Adjust as needed */
+  }
+
+  /* Reduce button size */
+.actions .btn-sm {
+    padding: 0.10rem 0.5rem;  /* Smaller padding */
+    font-size: 0.7rem;       /* Smaller font */
+    line-height: 1.2;         /* Tighter line height */
+  }
+  
+  /* Reduce icon size */
+  .actions .fe {
+    font-size: 0.75rem;       /* Match icon size to text */
+    vertical-align: middle;   /* Better alignment */
+  }
+  div.dt-buttons>.dt-button, div.dt-buttons>div.dt-button-split .dt-button {
+   
+    font-size: 1.7em;
+    line-height: 1em;
+    
+}
+div.dt-buttons > .dt-button, div.dt-buttons > div.dt-button-split .dt-button {
+    padding: 0.2em 0.5em;
+}
+
+div.dt-container div.dt-layout-row {
+      font-size: 13px;
+}

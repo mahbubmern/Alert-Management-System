@@ -170,18 +170,18 @@ const Register = () => {
     checkAdminStatus();
   }, [setInput]);
 
-  useEffect(() => {
-    const AdminUser = async () => {
-      try {
-        const response = await API.get(`/api/v1/user`);
-        setFindAdmin(response.data.user.some((user) => user.role === "Admin"));
-      } catch (error) {
-        throw new Error(error.response.data.message);
-      }
-    };
+  // useEffect(() => {
+  //   const AdminUser = async () => {
+  //     try {
+  //       const response = await API.get(`/api/v1/user`);
+  //       setFindAdmin(response.data.user.some((user) => user.role === "Admin"));
+  //     } catch (error) {
+  //       throw new Error(error.response.data.message);
+  //     }
+  //   };
 
-    AdminUser();
-  }, []);
+  //   AdminUser();
+  // }, []);
 
   useEffect(() => {
     if (message) {
@@ -268,36 +268,39 @@ const Register = () => {
 
               {/* Index & Role Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <input
-                    type="text"
-                    name="index"
-                    value={input.index}
-                    onChange={handleInputChange}
-                    placeholder="Index"
-                    className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                  />
-                </div>
+        {/* Index Input */}
+        <div>
+           <input 
+             type="text" 
+             name="index" 
+             value={input.index} 
+             onChange={handleInputChange} 
+             // ... classes ...
+           />
+        </div>
 
-                <div>
-                  <select
-                    name="role"
-                    value={input.role}
-                    onChange={handleSelectChange}
-                    // Disable the dropdown so they cannot change it manually
-                    // OR allow them to see it but only provide one option
-                    disabled={true} 
-                    className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 opacity-70 cursor-not-allowed"
-                  >
-                     {/* Logic: If Admin exists, show User. If Admin does NOT exist, show Admin */}
-                    {!adminAlreadyExists ? (
-                         <option className="bg-gray-800 text-white" value="Admin">Admin</option>
-                    ) : (
-                         <option className="bg-gray-800 text-white" value="User">User</option>
-                    )}
-                  </select>
-                </div>
-              </div>
+        {/* Role Select */}
+        <div>
+           <select
+             name="role"
+             value={input.role || ""} // Ensure it doesn't show undefined
+             onChange={handleSelectChange}
+             disabled={true} 
+             className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 opacity-70 cursor-not-allowed"
+           >
+             {/* Show "Loading..." while checking. 
+                Then show the correct single option.
+             */}
+             {loadingRole ? (
+                <option>Checking...</option>
+             ) : !adminAlreadyExists ? (
+                <option className="bg-gray-800 text-white" value="Admin">Admin</option>
+             ) : (
+                <option className="bg-gray-800 text-white" value="User">User</option>
+             )}
+           </select>
+        </div>
+    </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

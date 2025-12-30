@@ -23,19 +23,28 @@ import { io } from "../server.js";
  * @access : public
  * @route : '/api/v1/auth/register'
  */
+// ✅ 1. Lightweight Check Endpoint
+export const checkAdminStatus = async (req, res, next) => {
+  try {
+    // Check if ANY user has the role "Admin"
+    const adminUser = await Users.findOne({ role: "Admin" });
 
-export const checkAdminStatus = asyncHandler(async (req, res) => {
-  const adminExists = await User.findOne({ role: "Admin" })
-    .select("_id")
-    .lean();
-  res.status(200).json({ hasAdmin: !!adminExists });
-});
+    // If adminUser is found, return true. If null, return false.
+    res.status(200).json({ 
+      adminExists: !!adminUser, // Double bang converts object/null to true/false
+      message: adminUser ? "Admin exists" : "No admin found"
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
+// ✅ 2. Secure Register Controller
 export const registerUser = asyncHandler(async (req, res) => {
   const { index, name, email, password, branch, ho } = req.body;
-  // We do NOT destructure 'role' here because we will determine it programmatically
+  // Note: We ignore 'req.body.role' for security. We calculate it below.
 
-  // 1. Validation
+  // --- Validation ---
   if (!ho || ho === "-Select-" || !branch || branch === "-Select-") {
     return res.status(400).json({ message: "Please select HO and Branch" });
   }
@@ -49,10 +58,10 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   if (!isValidPassword(password)) {
-    return res.status(400).json({ message: "Meet Password Requirement" });
+    return res.status(400).json({ message: "Password must meet requirements" });
   }
 
-  // 2. Check Existing User
+  // --- Check Conflicts ---
   const checkExistingUser = await Users.findOne({
     $or: [{ email: email }, { index: index }],
   });
@@ -66,14 +75,14 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  // 3. DETERMINE ROLE (The Core Logic)
-  // Check if any Admin exists in the database
+  // --- Core Logic: Determine Role ---
   const adminExists = await Users.exists({ role: "Admin" });
   
-  // If NO admin exists, this new user BECOMES Admin. Otherwise, they are a User.
-  const finalRole = !adminExists ? "Admin" : "User";
+  // If NO admin exists, forcing this user to be Admin.
+  // If Admin DOES exist, force this user to be 'user'.
+  const finalRole = !adminExists ? "Admin" : "user";
 
-  // 4. Create User
+  // --- Creation ---
   const otp = generateOTP();
   const hashPassword = await bcrypt.hash(password, 10);
 
@@ -81,61 +90,72 @@ export const registerUser = asyncHandler(async (req, res) => {
     index,
     name,
     email,
-    role: finalRole, // Use the calculated role
+    role: finalRole, // Enforced Role
     ho,
     branch,
     password: hashPassword,
     accessToken: otp,
-    isAdmin: finalRole === "Admin", // Sync isAdmin boolean with role
+    isAdmin: finalRole === "Admin", // Sync boolean
   });
 
   if (createdUser) {
-    // Send activation cookie
+    // Cookie
     const activationToken = jwt.sign({ index }, process.env.JWT_SECRET, {
       expiresIn: "15min",
     });
 
     res.cookie("activationToken", activationToken, {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production"
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
 
-    // Send Email
+    // Email
     await AccountVerifyMail(email, { otp: otp, link: "" });
 
-    // 5. Send Notification (Only if it's a normal User registration)
+    // Notifications (Only send if new user is NOT Admin)
     if (finalRole !== "Admin") {
-        const toRoles = ["Admin", "CISO", "SOC Manager"];
+      const toRoles = ["Admin", "CISO", "SOC Manager"];
+      // Assuming Notification model & IO are available globally or imported
+      try {
         for (let role of toRoles) {
-            // Ensure Notification model is imported
             const notif = await Notification.create({
-                toRoles: [role],
-                message: `A new User Named ${name} Created an Account`,
+              toRoles: [role],
+              message: `A new User Named ${name} Created an Account`,
             });
-            // Ensure io is imported
-            if(global.io) global.io.to(role).emit("newNotification", notif);
+            if (global.io) global.io.to(role).emit("newNotification", notif);
         }
+      } catch (err) {
+          console.error("Notification Error:", err);
+      }
     }
   }
 
-  res.status(201).json({ 
-      user: createdUser, 
-      message: `User registration Successful as ${finalRole}` 
+  res.status(201).json({
+    user: createdUser,
+    message: `User registration Successful as ${finalRole}`,
   });
 });
 
 export const accountActivationByOTP = asyncHandler(async (req, res) => {
-  const { token } = req.params;
+  // 1. Get OTP from input
   const { otp } = req.body;
 
-  const activationToken = tokenDecode(token);
+  // 2. Get Token from COOKIES (Fix: Changed from req.params to req.cookies)
+  // Note: Make sure you have 'cookie-parser' middleware used in your server.js/app.js
+  const activationToken = req.cookies.activationToken;
 
-  // Token verify
+  if (!activationToken) {
+    return res.status(400).json({ message: "Session expired or Token missing. Please Register again." });
+  }
+
+  // 3. Verify Token
   let tokenVerify;
   try {
+    // Fix: Removed 'tokenDecode' wrapper unless you strictly need it. 
+    // jwt.verify expects the raw token string from the cookie.
     tokenVerify = jwt.verify(activationToken, process.env.JWT_SECRET);
   } catch (error) {
-    // Handle JWT expiration
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(400).json({
         message: "Time Expired. Please Click to resend Activation Link",
@@ -144,29 +164,37 @@ export const accountActivationByOTP = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid Token" });
   }
 
-  const currentTimeinMilisecond = Date.now();
-  const currentTimeinSecond = currentTimeinMilisecond / 1000;
-
+  // 4. Check Token Expiry Logic (Redundant if jwt.verify works, but keeping your logic)
+  const currentTimeinSecond = Math.floor(Date.now() / 1000); // Fix: Math.floor for seconds
   if (currentTimeinSecond > tokenVerify.exp) {
     return res.status(400).json({
       message: "Time Expired. Please Click to resend Activation Link",
     });
   }
 
+  // 5. Find User
   const activeuser = await Users.findOne({ index: tokenVerify.index });
 
   if (!activeuser) {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // Check OTP
-  if (otp != activeuser.accessToken) {
+  // 6. Check OTP (Compare Input OTP with Database OTP)
+  // Ensure both are strings to avoid type mismatch errors
+  if (String(otp).trim() !== String(activeuser.accessToken).trim()) {
     return res.status(400).json({ message: "Wrong OTP" });
   }
 
+  // 7. Update User
   const updateResult = await Users.findOneAndUpdate(
     { _id: activeuser._id },
-    { $set: { isActivate: true, accessToken: null } },
+    { 
+      $set: { 
+        isActivate: true, 
+        accessToken: null, // Clear the OTP from DB after use
+        isVerified: true   // Optional: Mark verified if needed
+      } 
+    },
     { new: true }
   );
 
@@ -174,12 +202,14 @@ export const accountActivationByOTP = asyncHandler(async (req, res) => {
     return res.status(500).json({ message: "Failed to update user" });
   }
 
-  // Clear activation token cookie
+  // 8. Clear activation token cookie
   res.clearCookie("activationToken");
 
-  res
-    .status(200)
-    .json({ user: registerUser, message: "Account Activation Successful" });
+  // 9. Response
+  res.status(200).json({ 
+    user: updateResult, // Fix: Changed 'registerUser' (function name) to 'updateResult' (actual data)
+    message: "Account Activation Successful" 
+  });
 });
 
 //===========================================================

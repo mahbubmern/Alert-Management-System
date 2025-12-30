@@ -57,49 +57,57 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [station, setStation] = useState("");
   const [subStation, setSubStation] = useState("");
-  const [adminAlreadyExists, setAdminAlreadyExists] = useState(false); 
-  const [roleOptions, setRoleOptions] = useState([]);
 
   const [division, setDivision] = useState("");
 
   const [secondStation, setSecondStation] = useState([]);
   // const [thirdStation, setThirdStation] = useState([]);
 
+  const [loadingRole, setLoadingRole] = useState(true);
+
   const togglePassword = () => {
     setShowPassword(!showPassword);
   };
 
   const [findAdmin, setFindAdmin] = useState(false);
+
   const { loader, error, message } = useSelector(authSelector);
   const { input, setInput, handleInputChange, formReset } = useForm({
     index: "",
     name: "",
     email: "",
     password: "",
+    role: "",
   });
 
+  // --- Handlers ---
   const handleStationChange = (e) => {
     const selectedStation = e.target.value;
     setStation(selectedStation);
     if (selectedStation !== "-Select-") {
-      setSecondStation(
-        stations.find((data) => data.name === selectedStation).subStations[0]
-          .division
+      const stationData = stations.find(
+        (data) => data.name === selectedStation
       );
-      // setThirdStation([]);
-      setInput(() => ({
-        branch: "",
-      }));
+      if (stationData && stationData.subStations[0]) {
+        setSecondStation(stationData.subStations[0].division);
+      }
+      setInput((prev) => ({ ...prev, ho: selectedStation, branch: "" }));
     } else {
       setSecondStation([]);
       setSubStation("");
-      // setThirdStation([]);
-      setInput(() => ({
-        branch: "",
-      }));
-
-      // setDivision("");
+      setInput((prev) => ({ ...prev, ho: "", branch: "" }));
     }
+  };
+
+  const handleDivisionChange = (e) => {
+    const val = e.target.value;
+    setDivision(val);
+    setInput((prev) => ({ ...prev, branch: val }));
+  };
+
+  const handleRegisterForm = (e) => {
+    e.preventDefault();
+    dispatch(createUserRegister(input));
   };
 
   // const handleSubStationChange = (e) => {
@@ -123,10 +131,6 @@ const Register = () => {
   //   }
   // };
 
-  const handleDivisionChange = (e) => {
-    setDivision(e.target.value);
-  };
-
   const handleSelectChange = (e) => {
     const { name, value } = e.target;
     setInput((prevInput) => ({
@@ -135,40 +139,93 @@ const Register = () => {
     }));
   };
 
-  const handleRegisterForm = (e) => {
-    e.preventDefault();
-    dispatch(createUserRegister(input));
-
-    // navigate("/account-activation-by-otp");
-  };
-
-  // find Admin User
-
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        // Call the NEW lightweight route created in Part 1
-        const response = await API.get(`/api/v1/user/check-admin-status`);
-        const hasAdmin = response.data.hasAdmin;
-        
-        setAdminAlreadyExists(hasAdmin);
-        
-        // Automatically set the input role and options based on DB status
-        if (!hasAdmin) {
-            // No Admin in DB -> This user MUST be Admin
-            setInput(prev => ({ ...prev, role: "Admin" }));
-        } else {
-            // Admin exists -> This user MUST be User
-            setInput(prev => ({ ...prev, role: "User" }));
-        }
+        setLoadingRole(true); // Ensure loading starts
+        const { data } = await API.get("/api/v1/auth/check-admin-status");
 
+        const isAdminPresent =
+          data.adminExists === true || data.hasAdmin === true;
+
+        if (!isAdminPresent) {
+          setInput((prev) => ({ ...prev, role: "Admin" }));
+        } else {
+          setInput((prev) => ({ ...prev, role: "User" }));
+        }
       } catch (error) {
-        console.error("Error checking admin status", error);
+        console.error("Error checking admin:", error);
+        // Safety fallback
+        setInput((prev) => ({ ...prev, role: "User" }));
+      } finally {
+        setLoadingRole(false);
       }
     };
 
     checkAdminStatus();
-  }, [setInput]);
+  }, []);
+
+  // // CHECK DATABASE ON MOUNT
+  // useEffect(() => {
+  //   const checkAdminStatus = async () => {
+  //     try {
+  //       setLoadingRole(true);
+  //       // Replace with your actual API endpoint
+  //       const { data } = await API.get("/api/v1/user/check-admin-status");
+
+  //       // precise logic:
+  //       if (data.hasAdmin) {
+  //         // Admin exists -> Force role to "User"
+  //         setIsAdminMissing(false);
+  //         setInput((prev) => ({ ...prev, role: "User" }));
+  //       } else {
+  //         // No Admin -> Force role to "Admin"
+  //         setIsAdminMissing(true);
+  //         setInput((prev) => ({ ...prev, role: "Admin" }));
+  //       }
+  //     } catch (error) {
+  //       console.error("Error checking admin status:", error);
+  //       // Fallback to User if error, for safety
+  //       setInput((prev) => ({ ...prev, role: "User" }));
+  //     } finally {
+  //       setLoadingRole(false);
+  //     }
+  //   };
+
+  //   checkAdminStatus();
+  // }, []);
+
+  // find Admin User
+
+  // 1. Check Admin Status on Mount
+  // useEffect(() => {
+  //   const checkStatus = async () => {
+  //     try {
+  //       setLoadingRole(true);
+  //       const { data } = await API.get("/api/v1/user/check-admin-status");
+
+  //       // data.hasAdmin is TRUE if an admin exists
+  //       const adminExists = data.hasAdmin;
+
+  //       setIsAdminMissing(!adminExists);
+
+  //       // Auto-set the role in form state
+  //       setInput((prev) => ({
+  //         ...prev,
+  //         role: !adminExists ? "Admin" : "user", // If no admin, I am Admin. Else user.
+  //       }));
+
+  //     } catch (err) {
+  //       console.error("Failed to check admin status", err);
+  //       // Fallback safe default
+  //       setInput((prev) => ({ ...prev, role: "user" }));
+  //     } finally {
+  //       setLoadingRole(false);
+  //     }
+  //   };
+
+  //   checkStatus();
+  // }, [setInput]);
 
   // useEffect(() => {
   //   const AdminUser = async () => {
@@ -203,7 +260,7 @@ const Register = () => {
 
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0b1221] via-[#111a2e] to-[#1e2a47] px-4">
         <div className="w-full max-w-5xl flex flex-col md:flex-row bg-white/5 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border border-white/10">
-          {/* Left Section (Logo) */}
+          {/* Left Section (Logo) - Keeping your existing design */}
           <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gradient-to-br from-[#111a2e] to-[#0b1221] p-10">
             <img src={logo} alt="Logo" className="w-64 h-auto drop-shadow-lg" />
           </div>
@@ -215,7 +272,6 @@ const Register = () => {
               <p className="text-gray-400">Access to Alert Management</p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleRegisterForm} className="space-y-5">
               {/* Station & Branch */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -223,16 +279,13 @@ const Register = () => {
                   <select
                     name="ho"
                     value={station}
-                    onChange={(e) => {
-                      handleStationChange(e);
-                      handleSelectChange(e);
-                    }}
+                    onChange={handleStationChange}
                     className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                   >
-                    <option className="bg-gray-800">-Select-</option>
+                    <option className="bg-gray-800">-Select HO-</option>
                     {stations.map((item, index) => (
                       <option
-                        className=" bg-gray-800 text-white"
+                        className="bg-gray-800 text-white"
                         key={index}
                         value={item.name}
                       >
@@ -246,16 +299,13 @@ const Register = () => {
                   <select
                     name="branch"
                     value={division}
-                    onChange={(e) => {
-                      handleDivisionChange(e);
-                      handleSelectChange(e);
-                    }}
+                    onChange={handleDivisionChange}
                     className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                   >
-                    <option className="bg-gray-800">-Select-</option>
+                    <option className="bg-gray-800">-Select Branch-</option>
                     {secondStation?.map((item, index) => (
                       <option
-                        className=" bg-gray-800 text-white"
+                        className="bg-gray-800 text-white"
                         key={index}
                         value={item}
                       >
@@ -266,45 +316,43 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Index & Role Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Index Input */}
-        <div>
-           <input 
-             type="text" 
-             name="index" 
-             value={input.index} 
-             onChange={handleInputChange} 
-             // ... classes ...
-           />
-        </div>
-
-        {/* Role Select */}
-        <div>
-           <select
-             name="role"
-             value={input.role || ""} // Ensure it doesn't show undefined
-             onChange={handleSelectChange}
-             disabled={true} 
-             className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 opacity-70 cursor-not-allowed"
-           >
-             {/* Show "Loading..." while checking. 
-                Then show the correct single option.
-             */}
-             {loadingRole ? (
-                <option>Checking...</option>
-             ) : !adminAlreadyExists ? (
-                <option className="bg-gray-800 text-white" value="Admin">Admin</option>
-             ) : (
-                <option className="bg-gray-800 text-white" value="User">User</option>
-             )}
-           </select>
-        </div>
-    </div>
-
+              {/* Index & Role */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  {/* Name */}
+                  <input
+                    type="text"
+                    name="index"
+                    value={input.index}
+                    onChange={handleInputChange}
+                    placeholder="Index"
+                    className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <select
+                    name="role"
+                    value={input.role} // This is controlled by the state above
+                    disabled={true} // Keep disabled so they can't change it manually
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 opacity-80 cursor-not-allowed"
+                  >
+                    {loadingRole ? (
+                      // STEP 4: Show this while loading
+                      <option>Checking system...</option>
+                    ) : input.role === "Admin" ? (
+                      // STEP 5: If state became Admin, show Admin
+                      <option value="Admin">Admin</option>
+                    ) : (
+                      // STEP 6: Otherwise show User
+                      <option value="User">User</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* Name & Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <input
                     type="text"
                     name="name"
@@ -314,9 +362,7 @@ const Register = () => {
                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                   />
                 </div>
-
                 <div>
-                  {/* Email */}
                   <input
                     type="text"
                     name="email"
@@ -326,41 +372,38 @@ const Register = () => {
                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                   />
                 </div>
-
-              
               </div>
-               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                      {/* Password */}
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={input.password}
-                  onChange={handleInputChange}
-                  placeholder="Password"
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
-                />
-                <button
-                  type="button"
-                  onClick={togglePassword}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute top-2 right-3 text-gray-400 hover:text-blue-400 transition"
-                >
-                  {showPassword ? (
-                    <i className="fa fa-eye"></i>
-                  ) : (
-                    <i className="fa fa-eye-slash"></i>
-                  )}
-                </button>
-              </div>
-               </div>
 
-            
+              {/* Password */}
+              <div className="grid grid-cols-1 gap-4">
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={input.password}
+                    onChange={handleInputChange}
+                    placeholder="Password"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePassword}
+                    className="absolute top-2 right-3 text-gray-400 hover:text-blue-400 transition"
+                  >
+                    {showPassword ? (
+                      <i className="fa fa-eye"></i>
+                    ) : (
+                      <i className="fa fa-eye-slash"></i>
+                    )}
+                  </button>
+                </div>
+              </div>
 
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition font-semibold text-white shadow-md cursor-pointer"
+                disabled={loader || loadingRole}
+                className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition font-semibold text-white shadow-md cursor-pointer disabled:opacity-50"
               >
                 {loader ? "Creating..." : "Register"}
               </button>

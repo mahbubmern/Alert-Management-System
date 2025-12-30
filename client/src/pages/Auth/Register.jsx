@@ -57,6 +57,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [station, setStation] = useState("");
   const [subStation, setSubStation] = useState("");
+  const [adminAlreadyExists, setAdminAlreadyExists] = useState(false); 
+  const [roleOptions, setRoleOptions] = useState([]);
 
   const [division, setDivision] = useState("");
 
@@ -141,6 +143,32 @@ const Register = () => {
   };
 
   // find Admin User
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        // Call the NEW lightweight route created in Part 1
+        const response = await API.get(`/api/v1/user/check-admin-status`);
+        const hasAdmin = response.data.hasAdmin;
+        
+        setAdminAlreadyExists(hasAdmin);
+        
+        // Automatically set the input role and options based on DB status
+        if (!hasAdmin) {
+            // No Admin in DB -> This user MUST be Admin
+            setInput(prev => ({ ...prev, role: "Admin" }));
+        } else {
+            // Admin exists -> This user MUST be User
+            setInput(prev => ({ ...prev, role: "User" }));
+        }
+
+      } catch (error) {
+        console.error("Error checking admin status", error);
+      }
+    };
+
+    checkAdminStatus();
+  }, [setInput]);
 
   useEffect(() => {
     const AdminUser = async () => {
@@ -238,7 +266,7 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Index & Role */}
+              {/* Index & Role Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <input
@@ -256,11 +284,17 @@ const Register = () => {
                     name="role"
                     value={input.role}
                     onChange={handleSelectChange}
-                    className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
+                    // Disable the dropdown so they cannot change it manually
+                    // OR allow them to see it but only provide one option
+                    disabled={true} 
+                    className="w-full px-4 py-2 bg-gray/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 opacity-70 cursor-not-allowed"
                   >
-                    <option className="bg-gray-800 text-white" value="select">-Select-</option>
-                    {!findAdmin && <option className=" bg-gray-800 text-white" value="Admin">Admin</option>}
-                    <option className=" bg-gray-800 text-white" value="user">User</option>
+                     {/* Logic: If Admin exists, show User. If Admin does NOT exist, show Admin */}
+                    {!adminAlreadyExists ? (
+                         <option className="bg-gray-800 text-white" value="Admin">Admin</option>
+                    ) : (
+                         <option className="bg-gray-800 text-white" value="User">User</option>
+                    )}
                   </select>
                 </div>
               </div>

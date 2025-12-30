@@ -23,39 +23,36 @@ import { io } from "../server.js";
  * @access : public
  * @route : '/api/v1/auth/register'
  */
-export const registerUser = asyncHandler(async (req, res) => {
-  const { role, index, name, email, password, branch, ho } = req.body;
 
-  if (
-    ho === undefined ||
-    ho == "-Select-" ||
-    branch === undefined ||
-    branch == "-Select-"
-  ) {
+export const checkAdminStatus = asyncHandler(async (req, res) => {
+  const adminExists = await User.findOne({ role: "Admin" })
+    .select("_id")
+    .lean();
+  res.status(200).json({ hasAdmin: !!adminExists });
+});
+
+export const registerUser = asyncHandler(async (req, res) => {
+  const { index, name, email, password, branch, ho } = req.body;
+  // We do NOT destructure 'role' here because we will determine it programmatically
+
+  // 1. Validation
+  if (!ho || ho === "-Select-" || !branch || branch === "-Select-") {
     return res.status(400).json({ message: "Please select HO and Branch" });
   }
-
-  if (role === undefined || role == "select") {
-    return res.status(400).json({ message: "Please Select Role" });
-  }
-  //check all fields
 
   if (!index || !name || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  //check valid Email
-
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Invalid Email" });
   }
-
-  // check password Requirements
 
   if (!isValidPassword(password)) {
     return res.status(400).json({ message: "Meet Password Requirement" });
   }
 
+  // 2. Check Existing User
   const checkExistingUser = await Users.findOne({
     $or: [{ email: email }, { index: index }],
   });
@@ -69,83 +66,62 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  // create OTP
+  // 3. DETERMINE ROLE (The Core Logic)
+  // Check if any Admin exists in the database
+  const adminExists = await Users.exists({ role: "Admin" });
+  
+  // If NO admin exists, this new user BECOMES Admin. Otherwise, they are a User.
+  const finalRole = !adminExists ? "Admin" : "User";
+
+  // 4. Create User
   const otp = generateOTP();
-
-  //======================================================================
-  // code this line up is optimized by Chatgpt of above code
-
-  //Hash Password
   const hashPassword = await bcrypt.hash(password, 10);
 
-  if (role === "admin") {
-    if (!role || !index || !name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+  const createdUser = await Users.create({
+    index,
+    name,
+    email,
+    role: finalRole, // Use the calculated role
+    ho,
+    branch,
+    password: hashPassword,
+    accessToken: otp,
+    isAdmin: finalRole === "Admin", // Sync isAdmin boolean with role
+  });
 
-    const createdUser = await Users.create({
-      index,
-      name,
-      email,
-      role,
-      ho,
-      branch,
-      password: hashPassword,
-      accessToken: otp,
+  if (createdUser) {
+    // Send activation cookie
+    const activationToken = jwt.sign({ index }, process.env.JWT_SECRET, {
+      expiresIn: "15min",
     });
 
-    if (createdUser) {
-      //send activationToken to cookie
-      const activationToken = jwt.sign({ index }, process.env.JWT_SECRET, {
-        expiresIn: "15min",
-      });
-
-      res.cookie("activationToken", activationToken);
-
-      await AccountVerifyMail(email, { otp: otp, link: "" });
-    }
-
-    res
-      .status(201)
-      .json({ user: createdUser, message: "User registration Successful" });
-  } else {
-    const createdUser = await Users.create({
-      index,
-      name,
-      email,
-      ho,
-      branch,
-      password: hashPassword,
-      accessToken: otp,
+    res.cookie("activationToken", activationToken, {
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production"
     });
 
-    if (createdUser) {
-      //send activationToken to cookie
-      const activationToken = jwt.sign({ index }, process.env.JWT_SECRET, {
-        expiresIn: "15min",
-      });
+    // Send Email
+    await AccountVerifyMail(email, { otp: otp, link: "" });
 
-      res.cookie("activationToken", activationToken);
-
-      await AccountVerifyMail(email, { otp: otp, link: "" });
+    // 5. Send Notification (Only if it's a normal User registration)
+    if (finalRole !== "Admin") {
+        const toRoles = ["Admin", "CISO", "SOC Manager"];
+        for (let role of toRoles) {
+            // Ensure Notification model is imported
+            const notif = await Notification.create({
+                toRoles: [role],
+                message: `A new User Named ${name} Created an Account`,
+            });
+            // Ensure io is imported
+            if(global.io) global.io.to(role).emit("newNotification", notif);
+        }
     }
-
-    // send Notification
-
-    const toRoles = ["Admin", "CISO", "SOC Manager"];
-    for (let role of toRoles) {
-      const notif = await Notification.create({
-        toRoles: [role],
-        message: `A new User Named ${name} Created an Account`,
-      });
-
-      io.to(role).emit("newNotification", notif);
-    }
-
-    res
-      .status(201)
-      .json({ user: createdUser, message: "User registration Successful" });
   }
+
+  res.status(201).json({ 
+      user: createdUser, 
+      message: `User registration Successful as ${finalRole}` 
+  });
 });
 
 export const accountActivationByOTP = asyncHandler(async (req, res) => {

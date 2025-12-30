@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  checkAdminStatus,
   registerUser,
   accountActivationByOTP,
   login,
@@ -19,7 +20,7 @@ import tokenVerify from "../middleware/tokenVerify.js";
 const router = express.Router();
 
 // route set
-
+router.get('/check-admin-status', checkAdminStatus);
 router.post("/register", registerUser);
 router.post("/login", login);
 router.post("/sessionEnd", sessionEndController);

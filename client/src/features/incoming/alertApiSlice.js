@@ -46,18 +46,44 @@ export const editAlert = createAsyncThunk(
   }
 );
 
+// export const updateInvestigationAlert = createAsyncThunk(
+//   "incoming/updateInvestigationAlert",
+//   async (data) => {
+//     try {
+//       const response = await API.put(`/api/v1/alert/${data.get("_id")}`, data);
+
+//       return response.data;
+//     } catch (error) {
+//       throw new Error(error.response.data.message);
+//     }
+//   }
+// );
+
+
 export const updateInvestigationAlert = createAsyncThunk(
   "incoming/updateInvestigationAlert",
-  async (data) => {
+  async (data, thunkAPI) => {
     try {
-      const response = await API.put(`/api/v1/alert/${data.get("_id")}`, data);
+      // 1. Safely extract ID. 
+      // Checks if 'data' is FormData (use .get) or a regular Object (use ._id)
+      const id = data instanceof FormData ? data.get("_id") : data._id;
+
+      if (!id) {
+        throw new Error("Alert ID is missing in the request data.");
+      }
+
+      // 2. Pass ID in the URL explicitly
+      const response = await API.put(`/api/v1/alert/${id}`, data);
 
       return response.data;
     } catch (error) {
-      throw new Error(error.response.data.message);
+      const message = error.response?.data?.message || error.message;
+
+      throw new Error(message);
     }
   }
 );
+
 
 // update level 2  investigation alert
 

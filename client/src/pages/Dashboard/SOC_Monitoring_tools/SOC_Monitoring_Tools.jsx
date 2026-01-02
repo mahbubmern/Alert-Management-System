@@ -108,7 +108,7 @@ const SOC_Monitoring_Tools = () => {
 
   useEffect(() => {
     fetchAllusers();
-  }, []);
+  }, [user, dispatch]);
 
   const handleNeedToDoChange = (rowIndex, userValue, value) => {
     setRowInputs((prev) => {

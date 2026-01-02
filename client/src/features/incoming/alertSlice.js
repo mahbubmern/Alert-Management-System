@@ -88,10 +88,17 @@ const alertSlice = createSlice({
       })
       .addCase(updateInvestigationAlert.fulfilled, (state, action) => {
         state.alertLoader = false;
-        const updated = action.payload.alert;
-        state.alert = state.alert.map((a) =>
+
+
+        const updated = action.payload?.alert;
+        if(updated && updated._id){
+          state.alert = state.alert.map((a) =>
           a._id === updated._id ? updated : a
         );
+        }else{
+          console.warn("Updated alert data is missing or malformed:", action.payload);
+        }
+       
         state.alertMessage = action.payload.message;
       })
       .addCase(updateInvestigationAlert.rejected, (state, action) => {

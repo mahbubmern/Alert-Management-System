@@ -638,6 +638,7 @@ export const sessionGetController = asyncHandler(async (req, res) => {
       (a, b) => new Date(b.sessionEndTime) - new Date(a.sessionEndTime)
     )[0];
   }
+  
 
   // ✅ Rearrange sessionUsers: last → second → first (latest first order)
   const rearrangedUsers = [...session.sessionUsers].sort(

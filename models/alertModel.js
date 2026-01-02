@@ -304,6 +304,9 @@ alertSchema.index({
 
 alertSchema.index({ 
   assignedTo: 1, 
+});
+
+alertSchema.index({ 
   "fieldsToFill.role": 1, 
   "fieldsToFill.isPerformed": 1 
 });

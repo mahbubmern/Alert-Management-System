@@ -55,6 +55,14 @@ const toolsArray = [
       value : "Oracle Enterprise Manager",
       type: "checkbox",
     },
+
+     {
+      link: "",
+      toolsName: "PAM Solution",
+      title: "PAM Solution",
+      value : "PAM Solution",
+      type: "checkbox",
+    },
   ];
 
   export default toolsArray

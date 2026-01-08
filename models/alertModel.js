@@ -302,9 +302,9 @@ alertSchema.index({
   createdAt: -1 
 });
 
-alertSchema.index({ 
-  assignedTo: 1, 
-});
+// alertSchema.index({ 
+//   assignedTo: 1, 
+// });
 
 alertSchema.index({ 
   "fieldsToFill.role": 1, 

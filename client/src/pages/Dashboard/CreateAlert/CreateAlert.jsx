@@ -603,6 +603,7 @@ const CreateAlert = () => {
                 <path d="M20 4h-7a4 4 0 0 0-4 4v12" />
               </svg>
               <button
+              disabled={user?.role === "Auditor"}
                 onClick={() => setShowCreateForm(!showCreateForm)}
                 className="ml-auto flex items-center text-sm bg-green-200 hover:bg-green-300 text-gray-900 font-medium px-3 py-1 rounded transition-colors cursor-pointer"
               >
@@ -885,7 +886,8 @@ const CreateAlert = () => {
                                 disabled={
                                   user.role === "Admin" ||
                                   user.role === "SOC Manager" ||
-                                  user.role === "CISO"
+                                  user.role === "CISO" ||
+                                  user.role === "Auditor"
                                 }
                                 type="button"
                                 onClick={() => handleAccept(item)}
@@ -1102,6 +1104,7 @@ const CreateAlert = () => {
               {/* Submit Button */}
               <div>
                 <button
+                disabled={user?.role === "Auditor"}
                   type="submit"
                   className="w-full py-2 my-2 bg-gray-600 hover:bg-gray-500 dark:text-sky-400/100 font-semibold !rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >

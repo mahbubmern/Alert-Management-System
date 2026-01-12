@@ -69,6 +69,7 @@ const Users = () => {
     "Admin",
     "Level_1",
     "Level_2",
+    "Auditor"
   ];
 
   useEffect(() => {

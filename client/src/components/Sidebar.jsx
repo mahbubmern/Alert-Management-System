@@ -39,7 +39,8 @@ export default function Sidebar({ isSidebarCollapsed, setIsSidebarCollapsed }) {
     user.role === "Admin" ||
     user.role === "SOC Manager" ||
     user.role === "CISO" ||
-    user.role === "Level_1"
+    user.role === "Level_1" ||
+    user.role === "Auditor"
   ) {
     links.push({
       key: "create_alert",
@@ -51,7 +52,8 @@ export default function Sidebar({ isSidebarCollapsed, setIsSidebarCollapsed }) {
     user.role === "Admin" ||
     user.role === "SOC Manager" ||
     user.role === "CISO" ||
-    user.role === "Level_2"
+    user.role === "Level_2" || 
+    user.role === "Auditor"
   ) {
     links.push({
       key: "escalated_alert",
@@ -70,7 +72,8 @@ export default function Sidebar({ isSidebarCollapsed, setIsSidebarCollapsed }) {
     user.role === "CARD Admin" ||
     user.role === "Admin" ||
     user.role === "SOC Manager" ||
-    user.role === "CISO"
+    user.role === "CISO" ||
+    user.role === "Auditor"
   ) {
     links.push(
       {
@@ -134,7 +137,7 @@ export default function Sidebar({ isSidebarCollapsed, setIsSidebarCollapsed }) {
               {user.role === "Admin" ||
               user.role === "Level_2" ||
               user.role === "SOC Manager" ||
-              user.role === "CISO" ? (
+              user.role === "CISO" ||user.role === "Auditor" ? (
                 <li>
                   <Link
                     to="/dashboard/vulnerability_Management_portal"
@@ -314,7 +317,7 @@ export default function Sidebar({ isSidebarCollapsed, setIsSidebarCollapsed }) {
                       )}
 
                       {/* Admin Only */}
-                      {(user.role === "Admin" || user.role === "CISO") && (
+                      {(user.role === "Admin" || user.role === "CISO" || user.role === "Auditor") && (
                         <li>
                           <Link
                             to="/dashboard/incidence_pending_stage"

@@ -107,8 +107,6 @@ export const createAlert = asyncHandler(async (req, res) => {
 //   res.status(200).json({ alert: allAlert });
 // });
 
-
-
 export const getAllAlert = asyncHandler(async (req, res) => {
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
@@ -120,7 +118,7 @@ export const getAllAlert = asyncHandler(async (req, res) => {
   const user = req.me;
   const userId = user._id;
   const userRole = user.role;
-  const userBranch = user.branch; 
+  const userBranch = user.branch;
 
   // 1. Base Query Object
   let match = {};
@@ -164,7 +162,12 @@ export const getAllAlert = asyncHandler(async (req, res) => {
       match = {
         $or: [
           { author: userId, status: "escalated" },
-          { assignedTo: userId, status: "escalated", ...hasInvestigation },
+          {
+            assignedTo: userId,
+            author: { $ne: userId },
+            status: "escalated",
+            // ...hasInvestigation,
+          },
           { handBackToL1Assignee: "yes", status: { $ne: "closed" } },
           {
             L2verdict: "true_positive",
@@ -191,7 +194,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
       };
     }
   } else if (view === "archive") {
-    const SECURITY_BRANCH = "99341-Information Security, IT Risk Management & Fraud Control Division";
+    const SECURITY_BRANCH =
+      "99341-Information Security, IT Risk Management & Fraud Control Division";
     if (userBranch === SECURITY_BRANCH) {
       match = { status: "closed" };
     } else {
@@ -203,10 +207,10 @@ export const getAllAlert = asyncHandler(async (req, res) => {
             role: userRole,
             $or: [
               { isPerformed: "performed" },
-              { comments: { $exists: true, $ne: "" } }
-            ]
-          }
-        }
+              { comments: { $exists: true, $ne: "" } },
+            ],
+          },
+        },
       };
     }
   }
@@ -271,7 +275,7 @@ export const getAllAlert = asyncHandler(async (req, res) => {
             },
           },
         ],
-        
+
         // --- 2. Meta Data (Total Count Preserved) ---
         meta: [{ $count: "totalAlerts" }],
 
@@ -280,12 +284,20 @@ export const getAllAlert = asyncHandler(async (req, res) => {
           {
             $group: {
               _id: null,
-              totalOpen: { $sum: { $cond: [{ $eq: ["$status", "open"] }, 1, 0] } },
-              totalClosed: { $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] } },
-              totalEscalated: { $sum: { $cond: [{ $eq: ["$status", "escalated"] }, 1, 0] } },
-              totalIncidence: { $sum: { $cond: [{ $eq: ["$isIncidence", "yes"] }, 1, 0] } }
-            }
-          }
+              totalOpen: {
+                $sum: { $cond: [{ $eq: ["$status", "open"] }, 1, 0] },
+              },
+              totalClosed: {
+                $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] },
+              },
+              totalEscalated: {
+                $sum: { $cond: [{ $eq: ["$status", "escalated"] }, 1, 0] },
+              },
+              totalIncidence: {
+                $sum: { $cond: [{ $eq: ["$isIncidence", "yes"] }, 1, 0] },
+              },
+            },
+          },
         ],
 
         // --- 4. User Wise Alert Stats (NEW: For User Table) ---
@@ -296,14 +308,14 @@ export const getAllAlert = asyncHandler(async (req, res) => {
           // B. Combine Author and Assignees into a single list of IDs
           {
             $project: {
-              originalDoc: "$$ROOT", 
+              originalDoc: "$$ROOT",
               involvedUsers: {
                 $setUnion: [
                   [{ $ifNull: ["$author", null] }], // Wrap single author in array
-                  { $ifNull: ["$assignedTo", []] }  // Assignees is already array
-                ]
-              }
-            }
+                  { $ifNull: ["$assignedTo", []] }, // Assignees is already array
+                ],
+              },
+            },
           },
 
           // C. Unwind so we have 1 document per User-Alert connection
@@ -315,8 +327,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
               _id: "$involvedUsers",
               alertCount: { $sum: 1 },
               // Push the alert doc so you can view it in the popup
-              alert: { $push: "$originalDoc" } 
-            }
+              alert: { $push: "$originalDoc" },
+            },
           },
 
           // E. Lookup User Details (Name, Role, Index) for the Table Row
@@ -325,8 +337,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
               from: "users",
               localField: "_id",
               foreignField: "_id",
-              as: "userDetails"
-            }
+              as: "userDetails",
+            },
           },
           { $unwind: "$userDetails" },
 
@@ -338,18 +350,20 @@ export const getAllAlert = asyncHandler(async (req, res) => {
               index: "$userDetails.index",
               role: "$userDetails.role",
               alertCount: 1,
-              alert: 1 
-            }
-          }
-        ]
+              alert: 1,
+            },
+          },
+        ],
       },
     },
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
         stats: { $ifNull: [{ $arrayElemAt: ["$statistics", 0] }, {}] },
-        userWiseStats: "$userWiseStats" 
+        userWiseStats: "$userWiseStats",
       },
     },
   ]);
@@ -363,7 +377,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
     data: {
       alerts: result?.items || [],
       userWiseStats: result?.userWiseStats || [], // Used for your user table
-      counts: {                                   // Used for your top cards
+      counts: {
+        // Used for your top cards
         open: stats.totalOpen || 0,
         closed: stats.totalClosed || 0,
         escalated: stats.totalEscalated || 0,
@@ -400,8 +415,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
 
 //   if (view === "unassigned") {
 //     match.status = "unassigned";
-//   } 
-  
+//   }
+
 //   else if (view === "self_assigned") {
 //     if (userRole === "Level_1") {
 //       match = { acceptedBy: userId, status: "open" };
@@ -428,8 +443,8 @@ export const getAllAlert = asyncHandler(async (req, res) => {
 //         ],
 //       };
 //     }
-//   } 
-  
+//   }
+
 //   else if (view === "follow_up") {
 //     const hasInvestigation = {
 //       investigationToolsUsed: { $exists: true, $ne: "" },
@@ -476,12 +491,12 @@ export const getAllAlert = asyncHandler(async (req, res) => {
 //       // Logic: For this branch: only closed alerts
 //       match = { status: "closed" };
 //     } else {
-//       // Logic: 
+//       // Logic:
 //       // 1. user must be in assignedTo array
 //       // 2. user's role must be in escalationToOtherUsersRole
 //       // 3. user must have performed action OR commented in fieldsToFill
 //       match = {
-//         assignedTo: userId, 
+//         assignedTo: userId,
 //         "escalationToOtherUsersRole.toRoles": userRole,
 //         fieldsToFill: {
 //           $elemMatch: {
@@ -638,17 +653,17 @@ export const getAllAlert = asyncHandler(async (req, res) => {
 //           {
 //             $group: {
 //               _id: null,
-//               totalOpen: { 
-//                 $sum: { $cond: [{ $eq: ["$status", "open"] }, 1, 0] } 
+//               totalOpen: {
+//                 $sum: { $cond: [{ $eq: ["$status", "open"] }, 1, 0] }
 //               },
-//               totalClosed: { 
-//                 $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] } 
+//               totalClosed: {
+//                 $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] }
 //               },
-//               totalEscalated: { 
-//                 $sum: { $cond: [{ $eq: ["$status", "escalated"] }, 1, 0] } 
+//               totalEscalated: {
+//                 $sum: { $cond: [{ $eq: ["$status", "escalated"] }, 1, 0] }
 //               },
-//               totalIncidence: { 
-//                 $sum: { $cond: [{ $eq: ["$isIncidence", "yes"] }, 1, 0] } 
+//               totalIncidence: {
+//                 $sum: { $cond: [{ $eq: ["$isIncidence", "yes"] }, 1, 0] }
 //               }
 //             }
 //           }
@@ -666,7 +681,7 @@ export const getAllAlert = asyncHandler(async (req, res) => {
 
 //   const totalAlerts = result?.totalAlerts ?? 0;
 //   const totalPages = Math.ceil(totalAlerts / limit);
-  
+
 //   // Extract stats with default values (0)
 //   const stats = result?.stats || {};
 
@@ -701,8 +716,8 @@ export const getEscalatedAlerts = asyncHandler(async (req, res) => {
 
   // 2. Initial Filter: Only Escalated Alerts
   // We start with this because it's indexed and reduces the dataset immediately.
-  const baseMatch = { 
-    status: "escalated" 
+  const baseMatch = {
+    status: "escalated",
   };
 
   // 3. Search Logic
@@ -721,7 +736,7 @@ export const getEscalatedAlerts = asyncHandler(async (req, res) => {
     if (mongoose.Types.ObjectId.isValid(search)) {
       searchConditions.push({ _id: new mongoose.Types.ObjectId(search) });
     }
-    
+
     // Combine status filter with search filter
     baseMatch.$or = searchConditions;
   }
@@ -756,7 +771,7 @@ export const getEscalatedAlerts = asyncHandler(async (req, res) => {
           { $sort: { createdAt: -1 } }, // Ensure index exists on createdAt
           { $skip: skip },
           { $limit: limit },
-          
+
           // Clean up the temp field we made
           { $project: { assignedUsersTemp: 0 } },
 
@@ -791,12 +806,14 @@ export const getEscalatedAlerts = asyncHandler(async (req, res) => {
         meta: [{ $count: "totalAlerts" }],
       },
     },
-    
+
     // STAGE D: Result Unwrapping
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
       },
     },
   ]);
@@ -819,8 +836,6 @@ export const getEscalatedAlerts = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 export const getIncidenceAlerts = asyncHandler(async (req, res) => {
   // 1. Pagination & Search Setup
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -829,9 +844,9 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
   const search = (req.query.search || "").trim();
 
   const userId = req.me?._id;
-  
+
   if (!userId) {
-     return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   // 2. Base Filter Logic (Replicating your useEffect)
@@ -873,7 +888,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
           { $sort: { createdAt: -1 } }, // Ensure 'createdAt' is indexed
           { $skip: skip },
           { $limit: limit },
-          
+
           // Join Author Details
           {
             $lookup: {
@@ -884,7 +899,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
             },
           },
           { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
-          
+
           // Join AssignedTo Details
           {
             $lookup: {
@@ -894,7 +909,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
               as: "assignedTo",
             },
           },
-          
+
           // Project only necessary fields
           {
             $project: {
@@ -914,7 +929,9 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
       },
     },
   ]);
@@ -936,8 +953,6 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
     },
   });
 });
-
-
 
 // export const getPendingAlerts = asyncHandler(async (req, res) => {
 //   // 1. Pagination & Search Setup
@@ -990,7 +1005,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
 //           { $sort: { createdAt: -1 } }, // Needs Index
 //           { $skip: skip },
 //           { $limit: limit },
-          
+
 //           // Join Author Details
 //           {
 //             $lookup: {
@@ -1001,7 +1016,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
 //             },
 //           },
 //           { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
-          
+
 //           // Join AssignedTo Details
 //           {
 //             $lookup: {
@@ -1011,7 +1026,7 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
 //               as: "assignedTo",
 //             },
 //           },
-          
+
 //           // Project (Clean up payload)
 //           {
 //             $project: {
@@ -1054,10 +1069,6 @@ export const getIncidenceAlerts = asyncHandler(async (req, res) => {
 //   });
 // });
 
-
-
-
-
 export const getPendingAlerts = asyncHandler(async (req, res) => {
   // 1. Pagination & Search Setup
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -1077,7 +1088,7 @@ export const getPendingAlerts = asyncHandler(async (req, res) => {
   const initialMatch = {
     // ✅ UPDATE: Use $in to match either "pending" OR "yes"
     isIncidence: { $in: ["pending", "yes", "no"] },
-    
+
     // Optional: If you want to make this dynamic via URL (e.g. ?status=yes), use this instead:
     // isIncidence: req.query.status ? req.query.status : { $in: ["pending", "yes"] },
   };
@@ -1108,27 +1119,27 @@ export const getPendingAlerts = asyncHandler(async (req, res) => {
     roleBasedFilterStage = {
       $expr: {
         $gt: [
-          { 
-            $size: { 
+          {
+            $size: {
               $setDifference: [
-                { $ifNull: ["$fieldsToFill.role", []] }, 
-                "$currentAssignedRoles"
-              ] 
-            } 
+                { $ifNull: ["$fieldsToFill.role", []] },
+                "$currentAssignedRoles",
+              ],
+            },
           },
-          0
-        ]
-      }
+          0,
+        ],
+      },
     };
   } else {
     // LOGIC: Escalated to ME AND NOT assigned to ME
     roleBasedFilterStage = {
       $and: [
         { "escalationToOtherUsersRole.toRoles": userRole },
-        { 
-          currentAssignedRoles: { $ne: userRole } 
-        }
-      ]
+        {
+          currentAssignedRoles: { $ne: userRole },
+        },
+      ],
     };
   }
 
@@ -1143,7 +1154,7 @@ export const getPendingAlerts = asyncHandler(async (req, res) => {
         from: "users",
         localField: "assignedTo",
         foreignField: "_id",
-        pipeline: [{ $project: { role: 1 } }], 
+        pipeline: [{ $project: { role: 1 } }],
         as: "assignedUsersData",
       },
     },
@@ -1215,7 +1226,9 @@ export const getPendingAlerts = asyncHandler(async (req, res) => {
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
       },
     },
   ]);
@@ -1237,10 +1250,6 @@ export const getPendingAlerts = asyncHandler(async (req, res) => {
     },
   });
 });
-
-
-
-
 
 export const getEscalationPendingAlerts = asyncHandler(async (req, res) => {
   // 1. Setup
@@ -1330,7 +1339,11 @@ export const getEscalationPendingAlerts = asyncHandler(async (req, res) => {
     logicMatch = {
       $expr: {
         $gt: [
-          { $size: { $setDifference: ["$requiredRoles", "$currentAssignedRoles"] } },
+          {
+            $size: {
+              $setDifference: ["$requiredRoles", "$currentAssignedRoles"],
+            },
+          },
           0,
         ],
       },
@@ -1421,8 +1434,6 @@ export const getEscalationPendingAlerts = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 export const getIncidencePendingAlerts = asyncHandler(async (req, res) => {
   // 1. Pagination & Search Setup
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -1457,7 +1468,7 @@ export const getIncidencePendingAlerts = asyncHandler(async (req, res) => {
     if (mongoose.Types.ObjectId.isValid(search)) {
       searchConditions.push({ _id: new mongoose.Types.ObjectId(search) });
     }
-    
+
     // Combine strict filters with search (AND logic)
     matchConditions.$or = searchConditions;
   }
@@ -1517,7 +1528,9 @@ export const getIncidencePendingAlerts = asyncHandler(async (req, res) => {
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
       },
     },
   ]);
@@ -1540,8 +1553,6 @@ export const getIncidencePendingAlerts = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 export const getPendingActionAlerts = asyncHandler(async (req, res) => {
   // 1. Setup Pagination & Search
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -1554,7 +1565,8 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
   if (!user) return res.status(401).json({ message: "Unauthorized" });
 
   const isAdmin = ["Admin", "SOC Manager", "CISO"].includes(user.role);
-  const SECURITY_BRANCH = "99341-Information Security, IT Risk Management & Fraud Control Division";
+  const SECURITY_BRANCH =
+    "99341-Information Security, IT Risk Management & Fraud Control Division";
 
   // 3. Define Reusable Search Logic
   let searchMatch = {};
@@ -1591,12 +1603,12 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
             $or: [
               { comments: { $exists: false } },
               { comments: "" },
-              { comments: { $regex: /^\s*$/ } } // Handle "   " whitespace only
-            ]
-          }
+              { comments: { $regex: /^\s*$/ } }, // Handle "   " whitespace only
+            ],
+          },
         },
-        ...searchMatch // Apply search early
-      }
+        ...searchMatch, // Apply search early
+      },
     });
 
     // B. Lookup Users to check Branch (Expensive operation, so we do it second)
@@ -1606,7 +1618,7 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
         localField: "assignedTo",
         foreignField: "_id",
         as: "assignedUsersDetails",
-      }
+      },
     });
 
     // C. Filter: At least one assigned user is NOT from Security Branch
@@ -1614,15 +1626,14 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
       $match: {
         assignedUsersDetails: {
           $elemMatch: {
-            branch: { $ne: SECURITY_BRANCH }
-          }
-        }
-      }
+            branch: { $ne: SECURITY_BRANCH },
+          },
+        },
+      },
     });
-    
+
     // Clean up the heavy lookup array immediately
     pipeline.push({ $project: { assignedUsersDetails: 0 } });
-
   } else {
     // ==========================================
     // 🟦 NORMAL USER LOGIC
@@ -1644,11 +1655,11 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
           $or: [
             { comments: { $exists: false } },
             { comments: "" },
-            { comments: { $regex: /^\s*$/ } }
-          ]
-        }
+            { comments: { $regex: /^\s*$/ } },
+          ],
+        },
       },
-      ...searchMatch // Add search logic
+      ...searchMatch, // Add search logic
     };
 
     pipeline.push({ $match: normalUserMatch });
@@ -1661,7 +1672,7 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
-        
+
         // Final Lookups for Display
         {
           $lookup: {
@@ -1683,8 +1694,10 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
         // Security Projection
         {
           $project: {
-            "author.password": 0, "author.accessToken": 0,
-            "assignedTo.password": 0, "assignedTo.accessToken": 0,
+            "author.password": 0,
+            "author.accessToken": 0,
+            "assignedTo.password": 0,
+            "assignedTo.accessToken": 0,
           },
         },
       ],
@@ -1732,8 +1745,8 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
 
 //   if (view === "unassigned") {
 //     match.status = "unassigned";
-//   } 
-  
+//   }
+
 //   else if (view === "self_assigned") {
 //     if (userRole === "Level_1") {
 //       match = { acceptedBy: userId, status: "open" };
@@ -1751,8 +1764,8 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
 //         ]
 //       };
 //     }
-//   } 
-  
+//   }
+
 //   else if (view === "follow_up") {
 //     const hasInvestigation = { investigationToolsUsed: { $exists: true, $ne: "" }, investigationFindings: { $exists: true, $ne: "" } };
 //     if (userRole === "Level_1") {
@@ -1815,7 +1828,7 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
 //       // Logic: My role is allowed AND My role is NOT already assigned
 //       match = {
 //         "escalationToOtherUsersRole.toRoles": userRole,
-//         "assignedUsers.role": { $ne: userRole } 
+//         "assignedUsers.role": { $ne: userRole }
 //       };
 //     }
 //   }
@@ -1882,7 +1895,7 @@ export const getPendingActionAlerts = asyncHandler(async (req, res) => {
 //       }
 //     },
 //     // ✅ STEP 2: APPLY FILTERS
-//     { $match: finalMatch }, 
+//     { $match: finalMatch },
 //     // ✅ STEP 3: PAGINATION
 //     {
 //       $facet: {
@@ -1941,8 +1954,8 @@ export const updateAlert = asyncHandler(async (req, res) => {
   const io = req.io;
 
   // 🚀 PERFORMANCE OPTIMIZATION 1: INTENT DETECTION
-  // We check if the request actually contains data to update. 
-  // This prevents Admins from accidentally triggering the "Escalation/Accept" logic 
+  // We check if the request actually contains data to update.
+  // This prevents Admins from accidentally triggering the "Escalation/Accept" logic
   // when they just wanted to edit a field.
   const isEditAction =
     alertName ||
@@ -1998,7 +2011,7 @@ export const updateAlert = asyncHandler(async (req, res) => {
     // 4. Batch Notifications (Super Fast)
     if (status === "closed") {
       const toRoles = ["Level_2", "Admin", "SOC Manager", "CISO"];
-      
+
       // Prepare bulk data
       const notifications = toRoles.map((role) => ({
         fromRole: userRole,
@@ -2013,9 +2026,9 @@ export const updateAlert = asyncHandler(async (req, res) => {
       // Fire & Forget Socket events (Instant)
       toRoles.forEach((role) => {
         io.to(role).emit("newNotification", {
-           message: `${updatedAlert.alertName} Alert Closed`,
-           alertId: id,
-           fromRole: userRole
+          message: `${updatedAlert.alertName} Alert Closed`,
+          alertId: id,
+          fromRole: userRole,
         });
       });
     }
@@ -2043,7 +2056,7 @@ export const updateAlert = asyncHandler(async (req, res) => {
 
     // 2. Batch Notifications (Super Fast)
     const toRoles = ["Level_1", "Admin", "CISO", "SOC Manager"];
-    
+
     const notifications = toRoles.map((role) => ({
       fromRole: userRole,
       alertId: id,
@@ -2055,23 +2068,23 @@ export const updateAlert = asyncHandler(async (req, res) => {
 
     toRoles.forEach((role) => {
       io.to(role).emit("newNotification", {
-          message: `${userName} Accepted the alert ${updatedAlert.alertName}`,
-          alertId: id,
-          fromRole: userRole
+        message: `${userName} Accepted the alert ${updatedAlert.alertName}`,
+        alertId: id,
+        fromRole: userRole,
       });
     });
   }
 
   // Fallback for unauthorized roles/actions
   else {
-      // If we got here, a user (likely Admin) sent a request that didn't match
-      // the criteria for either block, or it's a role we don't handle.
-      // However, usually one of the above matches. 
-      // If no update happened, we should fetch the alert to return SOMETHING or error.
-      if(!updatedAlert) {
-           res.status(400);
-           throw new Error("No changes made or invalid action.");
-      }
+    // If we got here, a user (likely Admin) sent a request that didn't match
+    // the criteria for either block, or it's a role we don't handle.
+    // However, usually one of the above matches.
+    // If no update happened, we should fetch the alert to return SOMETHING or error.
+    if (!updatedAlert) {
+      res.status(400);
+      throw new Error("No changes made or invalid action.");
+    }
   }
 
   return res.status(200).json({ alert: updatedAlert });
@@ -2584,7 +2597,6 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
 
         updateData.forwardTo = forwardTo;
         updateData.needToDo = needToDo;
-       
       }
 
       // ✅ Update alert
@@ -2722,9 +2734,7 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
       incidentDeclarationRequired === "yes" &&
       isIncidence === "pending"
     ) {
-
-
-       // ✅ incident Declaration Reason mandatory
+      // ✅ incident Declaration Reason mandatory
       if (!incidentDeclarationReason?.trim()) {
         return res
           .status(400)
@@ -2737,13 +2747,15 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
         L2verdict,
         incidentDeclarationRequired,
         isIncidence,
-       cisoNotifiedTime: new Date(),
+        cisoNotifiedTime: new Date(),
       };
 
       if ((forwardTo?.length || 0) === 0) {
         // forwardTo none → handBackNoteToL1 mandatory
         if (!incidentDeclarationReason?.trim()) {
-          return res.status(400).json({ message: "Incident Declaration Reason Must be filledUp" });
+          return res
+            .status(400)
+            .json({ message: "Incident Declaration Reason Must be filledUp" });
         }
 
         updateData.incidentDeclarationReason = incidentDeclarationReason;
@@ -2785,12 +2797,9 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
         updateData.forwardTo = forwardTo;
         updateData.needToDo = needToDo;
         updateData.incidentDeclarationReason = incidentDeclarationReason;
-
-       
       }
 
-
-       const findAdmin = await Users.findOne({ role: "Admin" });
+      const findAdmin = await Users.findOne({ role: "Admin" });
       const adminId = findAdmin._id;
 
       // Fetch the existing alert to preserve and modify assignedTo
@@ -2841,28 +2850,7 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
         io.to(role).emit("newNotification", notif);
       }
 
-
       return res.status(200).json({ alert: updatedAlert });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       // if (
       //   !incidentDeclarationRequired ||
@@ -2927,115 +2915,120 @@ export const updateLevel2InvestigationAlert = asyncHandler(async (req, res) => {
       // return res.status(200).json({ alert: updatedAlert });
     }
 
-if (
-  L2verdict === "true_positive" &&
-  incidentDeclarationRequired === "yes" &&
-  isIncidence === "yes"
-) {
-  // 🔎 Mandatory field checks
-  const mandatoryChecks = [
-    { field: irp, message: "IRP must be filled up" },
-    { field: rootCause, message: "Root Cause Analysis must be filled up" },
-    { field: l2RemediationPlan, message: "L2 Remediation Plan must be filled up" },
-  ];
-
-  for (const { field, message } of mandatoryChecks) {
-    if (!field?.trim()) {
-      return res.status(400).json({ message });
-    }
-  }
-
-  let updateData = {
-    irp,
-    rootCause,
-    l2RemediationPlan,
-    incidentDeclarationRequired,
-    isIncidence,
-    L2verdict,
-  };
-
-  if ((forwardTo?.length || 0) === 0) {
-    // forwardTo empty → l2RemediationValidation + handBackNoteToL1 mandatory
-    if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-      return res.status(400).json({
-        message: "L2 Remediation Validation as well as Hand Back Note To L1 must be filled up",
-      });
-    }
-
-    updateData.l2RemediationValidation = l2RemediationValidation;
-    updateData.handBackNoteToL1 = handBackNoteToL1;
-    updateData.l2ResolutionTimestamp = new Date();
-    updateData.handBackTime = new Date();
-    updateData.handBackToL1Assignee = "yes";
-  } else {
-    // forwardTo has value → needToDo mandatory
     if (
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length
+      L2verdict === "true_positive" &&
+      incidentDeclarationRequired === "yes" &&
+      isIncidence === "yes"
     ) {
-      return res.status(400).json({ message: "Please select the user and create Note" });
+      // 🔎 Mandatory field checks
+      const mandatoryChecks = [
+        { field: irp, message: "IRP must be filled up" },
+        { field: rootCause, message: "Root Cause Analysis must be filled up" },
+        {
+          field: l2RemediationPlan,
+          message: "L2 Remediation Plan must be filled up",
+        },
+      ];
+
+      for (const { field, message } of mandatoryChecks) {
+        if (!field?.trim()) {
+          return res.status(400).json({ message });
+        }
+      }
+
+      let updateData = {
+        irp,
+        rootCause,
+        l2RemediationPlan,
+        incidentDeclarationRequired,
+        isIncidence,
+        L2verdict,
+      };
+
+      if ((forwardTo?.length || 0) === 0) {
+        // forwardTo empty → l2RemediationValidation + handBackNoteToL1 mandatory
+        if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
+          return res.status(400).json({
+            message:
+              "L2 Remediation Validation as well as Hand Back Note To L1 must be filled up",
+          });
+        }
+
+        updateData.l2RemediationValidation = l2RemediationValidation;
+        updateData.handBackNoteToL1 = handBackNoteToL1;
+        updateData.l2ResolutionTimestamp = new Date();
+        updateData.handBackTime = new Date();
+        updateData.handBackToL1Assignee = "yes";
+      } else {
+        // forwardTo has value → needToDo mandatory
+        if (
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length
+        ) {
+          return res
+            .status(400)
+            .json({ message: "Please select the user and create Note" });
+        }
+
+        // ✅ Extract role names
+        const forwardRoleNames = forwardTo.map((item) => item.value);
+
+        // ✅ Build escalationToOtherUsersRole
+        const escalationToOtherUsersRole = {
+          fromRole: userRole,
+          toRoles: forwardRoleNames,
+          date: new Date(),
+        };
+
+        // ✅ Build fieldsToFill
+        const fieldsToFill = Object.entries(needToDo).map(([role, value]) => ({
+          role,
+          value,
+          isPerformed: "notPerformed",
+          comments: "",
+        }));
+
+        updateData.forwardTo = forwardTo;
+        updateData.needToDo = needToDo;
+        updateData.$push = {
+          escalationToOtherUsersRole,
+          fieldsToFill: { $each: fieldsToFill },
+        };
+      }
+
+      // ✅ Update alert
+      const updatedAlert = await Alert.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updatedAlert) {
+        return res.status(404).json({ message: "Alert not found" });
+      }
+
+      // ✅ Notifications
+      const toRoles = [
+        "Level_1",
+        "Admin",
+        "CISO",
+        "SOC Manager",
+        ...(forwardTo?.map((item) => item.value) || []),
+      ];
+
+      for (let role of toRoles) {
+        const notif = await Notification.create({
+          fromRole: userRole,
+          alertId: id,
+          toRoles: [role],
+          message: `${req.me?.name} marked alert ${updatedAlert.alertName} as true positive. CISO declared it as incident for further processing.`,
+        });
+
+        io.to(role).emit("newNotification", notif);
+      }
+
+      return res.status(200).json({ alert: updatedAlert });
     }
-
-    // ✅ Extract role names
-    const forwardRoleNames = forwardTo.map((item) => item.value);
-
-    // ✅ Build escalationToOtherUsersRole
-    const escalationToOtherUsersRole = {
-      fromRole: userRole,
-      toRoles: forwardRoleNames,
-      date: new Date(),
-    };
-
-    // ✅ Build fieldsToFill
-    const fieldsToFill = Object.entries(needToDo).map(([role, value]) => ({
-      role,
-      value,
-      isPerformed: "notPerformed",
-      comments: "",
-    }));
-
-    updateData.forwardTo = forwardTo;
-    updateData.needToDo = needToDo;
-    updateData.$push = {
-      escalationToOtherUsersRole,
-      fieldsToFill: { $each: fieldsToFill },
-    };
-  }
-
-  // ✅ Update alert
-  const updatedAlert = await Alert.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!updatedAlert) {
-    return res.status(404).json({ message: "Alert not found" });
-  }
-
-  // ✅ Notifications
-  const toRoles = [
-    "Level_1",
-    "Admin",
-    "CISO",
-    "SOC Manager",
-    ...(forwardTo?.map((item) => item.value) || []),
-  ];
-
-  for (let role of toRoles) {
-    const notif = await Notification.create({
-      fromRole: userRole,
-      alertId: id,
-      toRoles: [role],
-      message: `${req.me?.name} marked alert ${updatedAlert.alertName} as true positive. CISO declared it as incident for further processing.`,
-    });
-
-    io.to(role).emit("newNotification", notif);
-  }
-
-  return res.status(200).json({ alert: updatedAlert });
-}
-
 
     // -----------------------------------------------------------------------
     // if (
@@ -3099,18 +3092,6 @@ if (
     // }
     // -----------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (
       L2verdict === "true_positive" &&
       incidentDeclarationRequired === "yes" &&
@@ -3118,7 +3099,9 @@ if (
     ) {
       // ✅ L2 Remediation Plan mandatory
       if (!l2RemediationPlan?.trim()) {
-        return res.status(400).json({ message: "L2 Remediation Plan must be filled up" });
+        return res
+          .status(400)
+          .json({ message: "L2 Remediation Plan must be filled up" });
       }
 
       let updateData = {
@@ -3133,7 +3116,10 @@ if (
       if ((forwardTo?.length || 0) === 0) {
         // forwardTo having no value → l2RemediationValidation + handBackNoteToL1 mandatory
         if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-          return res.status(400).json({ message: "L2 Remediation Validation as well as hand Back Note To L1 must be filled Up" });
+          return res.status(400).json({
+            message:
+              "L2 Remediation Validation as well as hand Back Note To L1 must be filled Up",
+          });
         }
 
         updateData.l2RemediationValidation = l2RemediationValidation;
@@ -3141,7 +3127,6 @@ if (
         updateData.l2ResolutionTimestamp = new Date();
         updateData.handBackTime = new Date();
         updateData.handBackToL1Assignee = "yes";
-
       } else {
         // forwardTo having value → needToDo mandatory
         if (
@@ -3149,7 +3134,9 @@ if (
           Object.keys(needToDo).length === 0 ||
           forwardTo.length !== Object.keys(needToDo).length
         ) {
-          return res.status(400).json({ message: "Please select the user and create Note" });
+          return res
+            .status(400)
+            .json({ message: "Please select the user and create Note" });
         }
 
         // ✅ Extract role names
@@ -3203,7 +3190,6 @@ if (
           alertId: id,
           toRoles: [role],
           message: `${req.me?.name} find this alert ${updatedAlert.alertName} as ture Positive and  CISO declare it  as Non incident sent for further process.`,
-
         });
 
         io.to(role).emit("newNotification", notif);
@@ -3425,8 +3411,6 @@ if (
 
     //   return res.status(200).json({ alert: updatedAlert });
     // }
-
-
 
     // rewrite the code ends here should start dated on 9/12/2025
 
@@ -4227,12 +4211,15 @@ export const performActions = asyncHandler(async (req, res) => {
   const { alertId, isPerformed, comments } = req.body;
   const userRole = req.me?.role;
 
-    // ✅ Validation: require at least one field
+  // ✅ Validation: require at least one field
   const hasPerformed = !!isPerformed;
   const hasComments = comments && comments.trim() !== "";
 
   if (!hasPerformed && !hasComments) {
-    createToast("Please select 'Performed' or enter comments before submitting.", "error");
+    createToast(
+      "Please select 'Performed' or enter comments before submitting.",
+      "error"
+    );
     return; // stop execution
   }
 
@@ -4260,7 +4247,7 @@ export const performActions = asyncHandler(async (req, res) => {
     // Save updated Document
     const updatedAlert = await alert.save();
 
-    const toRoles = ["Level_1","Level_2", "Admin", "SOC Manager", "CISO"];
+    const toRoles = ["Level_1", "Level_2", "Admin", "SOC Manager", "CISO"];
     for (let role of toRoles) {
       const notif = await Notification.create({
         fromRole: userRole,
@@ -4415,7 +4402,6 @@ export const performActions = asyncHandler(async (req, res) => {
 //   }
 // });
 
-
 // export const generateReport = asyncHandler(async (req, res) => {
 //   // 1. Pagination Setup (From Query Params)
 //   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -4541,10 +4527,10 @@ export const generateReport = asyncHandler(async (req, res) => {
   const isExportMode = reqLimit === 0;
 
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-  
+
   // If Export Mode: Set limit to a huge number. Otherwise: Use standard limit logic
   const limit = isExportMode ? 100000000 : Math.min(reqLimit || 10, 100);
-  
+
   // If Export Mode: Skip nothing. Otherwise: Skip based on page
   const skip = isExportMode ? 0 : (page - 1) * limit;
 
@@ -4621,7 +4607,9 @@ export const generateReport = asyncHandler(async (req, res) => {
     {
       $project: {
         items: 1,
-        totalAlerts: { $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0] },
+        totalAlerts: {
+          $ifNull: [{ $arrayElemAt: ["$meta.totalAlerts", 0] }, 0],
+        },
       },
     },
   ]);

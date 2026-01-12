@@ -258,6 +258,7 @@ const SOC_Monitoring_Tools = () => {
                           {/* Action */}
                           <td className="px-3 py-2 text-center">
                             <button
+                              disabled={user?.role === "Auditor"}
                               onClick={(e) =>
                                 handleUpdate(e, tool, rowInputs[index])
                               }

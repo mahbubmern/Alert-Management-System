@@ -205,8 +205,8 @@ const IncidencePendingStage = () => {
 
   const handleFileShow = (file) => {
     const fileName = file && file;
-    const halffilepath = `http://localhost:5050/files`;
-    const filePath = `${halffilepath}/${file}`;
+    const baseURL = import.meta.env.VITE_APP_URL;
+    const filePath = `${baseURL}/files/${fileName}`;
     window.open(filePath, "_blank");
   };
 

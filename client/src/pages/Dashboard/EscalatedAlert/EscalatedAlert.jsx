@@ -91,8 +91,9 @@ const EscalatedAlert = () => {
 
   const handleFileShow = (file) => {
     const fileName = file && file;
-    const halffilepath = `http://localhost:5050/files`;
-    const filePath = `${halffilepath}/${file}`;
+    const baseURL = import.meta.env.VITE_APP_URL;
+    const filePath = `${baseURL}/files/${fileName}`;
+
     window.open(filePath, "_blank");
   };
 
@@ -294,8 +295,8 @@ const EscalatedAlert = () => {
     if (searchTerm) {
       sortableData = sortableData.filter((item) =>
         Object.values(item).some((val) =>
-          val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          val?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
       );
     }
 
@@ -318,7 +319,7 @@ const EscalatedAlert = () => {
       const response = await API.get(
         `/api/v1/alert/paginated/escalatedAlert?page=${
           selectedPage.current
-        }&limit=${limit}&search=${encodeURIComponent(debouncedSearchTerm)}`
+        }&limit=${limit}&search=${encodeURIComponent(debouncedSearchTerm)}`,
       );
 
       const { alerts, pagination } = response.data.data;
@@ -345,14 +346,14 @@ const EscalatedAlert = () => {
     alert,
     user._id,
     user.role,
-  ]); 
+  ]);
 
-    const handlePageClick = (e) => {
+  const handlePageClick = (e) => {
     selectedPage.current = e.selected + 1;
     fetchEscalatedAlerts();
   };
 
-    const changeLimit = (newLimit) => {
+  const changeLimit = (newLimit) => {
     const parsedLimit = parseInt(newLimit);
     setLimit(parsedLimit);
     selectedPage.current = 1;
@@ -377,22 +378,35 @@ const EscalatedAlert = () => {
 
           <section id="selfAssignedTable">
             <div className="bg-gray-800 rounded-lg shadow-lg p-6 overflow-hidden">
-               <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-4">
                 {/* <h2 className="text-lg font-bold text-white"></h2> */}
                 <div className="flex items-center gap-4">
                   <select
-                      value={limit} // keeps UI in sync with state
-                      onChange={(e) => changeLimit(e.target.value)}
-                      name="pageSize"
-                      id="pageSize"
-                      className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                    </select>
-                     <p> <span className="text-xs text-cyan-600">Showing page {selectedPage.current} of {totalPages}</span> &nbsp; <span className="font-bold text-sm text-amber-600">Alerts</span> &nbsp;: <span className="text-sm text-cyan-400">{totalRecords}</span> </p>
+                    value={limit} // keeps UI in sync with state
+                    onChange={(e) => changeLimit(e.target.value)}
+                    name="pageSize"
+                    id="pageSize"
+                    className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                  </select>
+                  <p>
+                    {" "}
+                    <span className="text-xs text-cyan-600">
+                      Showing page {selectedPage.current} of {totalPages}
+                    </span>{" "}
+                    &nbsp;{" "}
+                    <span className="font-bold text-sm text-amber-600">
+                      Alerts
+                    </span>{" "}
+                    &nbsp;:{" "}
+                    <span className="text-sm text-cyan-400">
+                      {totalRecords}
+                    </span>{" "}
+                  </p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3  top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -531,8 +545,8 @@ const EscalatedAlert = () => {
                     </tbody>
                   </table>
 
-                                   {/* react paginate */}
-                                    <ReactPaginate
+                  {/* react paginate */}
+                  <ReactPaginate
                     previousLabel="Prev"
                     nextLabel="Next"
                     breakLabel="..."
@@ -542,19 +556,16 @@ const EscalatedAlert = () => {
                     onPageChange={handlePageClick}
                     // container flex row, responsive spacing
                     containerClassName="flex flex-wrap justify-center md:justify-end gap-2 mt-4"
-                    
                     // li wrapper minimal
                     pageClassName="list-none"
                     previousClassName="list-none"
                     nextClassName="list-none"
                     breakClassName="list-none"
-                  
                     // clickable <a> styles
                     pageLinkClassName="px-2 py-1 text-xs md:text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     previousLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     nextLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     breakLinkClassName="px-2 py-1 text-xs border rounded cursor-default block"
-                  
                     activeClassName="bg-blue-500 text-white"
                   />
 

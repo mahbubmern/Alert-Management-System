@@ -78,12 +78,15 @@ const Dashboard = () => {
 
   const dispatch = useDispatch();
 
-  const { alertError, alertMessage,  alert,  totalAlerts, alertCounts,userWiseAlerts,  alertLoader } =
-    useSelector(alertSelector);
-
-
-
-    
+  const {
+    alertError,
+    alertMessage,
+    alert,
+    totalAlerts,
+    alertCounts,
+    userWiseAlerts,
+    alertLoader,
+  } = useSelector(alertSelector);
 
   const { tools } = useSelector(monitoringToolsSelector);
 
@@ -93,7 +96,7 @@ const Dashboard = () => {
       status: tool.loginStatus,
       operationalStatus: tool.operationalStatus,
       ReportingPersonel: tools.sessionUserName,
-    }))
+    })),
   );
 
   const [userList, setUserList] = useState([]);
@@ -109,20 +112,25 @@ const Dashboard = () => {
   const totalAlertPercent =
     totalAlert > 0 ? Math.min((totalAlert / totalAlert) * 100, 100) : 0;
   const closeAlertPercent =
-    totalAlert > 0 ? Math.min((alertCounts?.closed / totalAlert) * 100, 100) : 0;
-
-  const incidencePercent =
-    totalAlert > 0 ? Math.min((alertCounts?.incidence / totalAlert) * 100, 100) : 0;
-
-  const escalatedPercent =
-    totalAlert > 0 ? Math.min((alertCounts?.escalated / totalAlert) * 100, 100) : 0;
-
-  const newAlertPercent =
     totalAlert > 0
-      ? Math.min((alertCounts?.open / totalAlert) * 100, 100)
+      ? Math.min((alertCounts?.closed / totalAlert) * 100, 100)
       : 0;
 
-  useEffect(() => {0
+  const incidencePercent =
+    totalAlert > 0
+      ? Math.min((alertCounts?.incidence / totalAlert) * 100, 100)
+      : 0;
+
+  const escalatedPercent =
+    totalAlert > 0
+      ? Math.min((alertCounts?.escalated / totalAlert) * 100, 100)
+      : 0;
+
+  const newAlertPercent =
+    totalAlert > 0 ? Math.min((alertCounts?.open / totalAlert) * 100, 100) : 0;
+
+  useEffect(() => {
+    0;
     dispatch(getAllAlert());
     // setNewAlertCreatedList(
     //   alert.filter((item) => item.status === "open").length
@@ -140,7 +148,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await API.get(`/api/v1/user/paginatedUser`);     
+        const response = await API.get(`/api/v1/user/paginatedUser`);
         setUserList(response.data.user.totalUsers);
       } catch (error) {
         throw new Error(error.response.data.message);
@@ -201,7 +209,6 @@ const Dashboard = () => {
   //         alert: user.alerts,
   //         alertCount: user.alerts.length,
   //       }));
-
 
   const userWiseAlertsDetails =
     user.role === "Admin" || user.role === "CISO" || user.role === "SOC Manager"
@@ -282,8 +289,8 @@ const Dashboard = () => {
 
   const handleFileShow = (file) => {
     const fileName = file && file;
-    const halffilepath = `http://localhost:5050/files`;
-    const filePath = `${halffilepath}/${file}`;
+    const baseURL = import.meta.env.VITE_APP_URL;
+    const filePath = `${baseURL}/files/${fileName}`;
     window.open(filePath, "_blank");
   };
 
@@ -373,63 +380,65 @@ const Dashboard = () => {
             <div className="space-y-6">
               <>
                 {/* Hand back Note for current users starts  */}
-                {user.branch === "99341-Information Security, IT Risk Management & Fraud Control Division" && (<div className="bg-gray-800 rounded-2xl shadow-lg p-3">
-                  <h2 className="text-lg font-semibold text-white mb-3 border-b border-gray-700 pb-2">
-                    Hand Back Note from :{" "}
-                    <span className="text-amber-600">
-                      {session?.sessionUser.name}{" "}
-                    </span>{" "}
-                    for current User
-                  </h2>
+                {user.branch ===
+                  "99341-Information Security, IT Risk Management & Fraud Control Division" && (
+                  <div className="bg-gray-800 rounded-2xl shadow-lg p-3">
+                    <h2 className="text-lg font-semibold text-white mb-3 border-b border-gray-700 pb-2">
+                      Hand Back Note from :{" "}
+                      <span className="text-amber-600">
+                        {session?.sessionUser.name}{" "}
+                      </span>{" "}
+                      for current User
+                    </h2>
 
-                  <div className="overflow-x-auto">
-                    <div className="border border-gray-300 rounded-md shadow-sm">
-                      <h2 id="accordion-collapse-heading-1">
-                        <button
-                          type="button"
-                          onClick={() => setIsOpen(!isOpen)}
-                          aria-expanded={isOpen}
-                          aria-controls="accordion-collapse-body-1"
-                          className="flex items-center justify-between w-full p-2 px-5 font-medium cursor-pointer text-gray-300 rounded-t-md border-b hover:text-gray-700 hover:bg-gray-300 gap-3"
-                        >
-                          <span>Hand Back Notes ..............</span>
-                          <svg
-                            className={`w-5 h-5 shrink-0 transform transition-transform duration-300 ${
-                              isOpen ? "rotate-180" : "rotate-0"
-                            }`}
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                    <div className="overflow-x-auto">
+                      <div className="border border-gray-300 rounded-md shadow-sm">
+                        <h2 id="accordion-collapse-heading-1">
+                          <button
+                            type="button"
+                            onClick={() => setIsOpen(!isOpen)}
+                            aria-expanded={isOpen}
+                            aria-controls="accordion-collapse-body-1"
+                            className="flex items-center justify-between w-full p-2 px-5 font-medium cursor-pointer text-gray-300 rounded-t-md border-b hover:text-gray-700 hover:bg-gray-300 gap-3"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="m5 15 7-7 7 7"
-                            />
-                          </svg>
-                        </button>
-                      </h2>
+                            <span>Hand Back Notes ..............</span>
+                            <svg
+                              className={`w-5 h-5 shrink-0 transform transition-transform duration-300 ${
+                                isOpen ? "rotate-180" : "rotate-0"
+                              }`}
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="m5 15 7-7 7 7"
+                              />
+                            </svg>
+                          </button>
+                        </h2>
 
-                      <div
-                        id="accordion-collapse-body-1"
-                        aria-labelledby="accordion-collapse-heading-1"
-                        ref={contentRef}
-                        className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                          isOpen ? "max-h-screen" : "max-h-0"
-                        }`}
-                      >
-                        <div className="p-4 md:p-5 text-gray-600">
-                          <p className="mb-2 text-cyan-600">
-                            {session?.sessionNotes}
-                          </p>
+                        <div
+                          id="accordion-collapse-body-1"
+                          aria-labelledby="accordion-collapse-heading-1"
+                          ref={contentRef}
+                          className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                            isOpen ? "max-h-screen" : "max-h-0"
+                          }`}
+                        >
+                          <div className="p-4 md:p-5 text-gray-600">
+                            <p className="mb-2 text-cyan-600">
+                              {session?.sessionNotes}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>)}
-                
+                )}
 
                 {/* Hand back Note for current users end  */}
               </>
@@ -544,13 +553,13 @@ const Dashboard = () => {
                       {Array.isArray(toolsArray) &&
                         toolsArray.map((tool, index) => {
                           const s1 = selectedToolsName[0]?.find(
-                            (s) => s.tool === tool.toolsName
+                            (s) => s.tool === tool.toolsName,
                           );
                           const s2 = selectedToolsName[1]?.find(
-                            (s) => s.tool === tool.toolsName
+                            (s) => s.tool === tool.toolsName,
                           );
                           const s3 = selectedToolsName[2]?.find(
-                            (s) => s.tool === tool.toolsName
+                            (s) => s.tool === tool.toolsName,
                           );
 
                           const renderStatus = (session) =>
@@ -729,13 +738,13 @@ const Dashboard = () => {
                     {Array.isArray(toolsArray) &&
                       toolsArray.map((tool, index) => {
                         const session1Tool = selectedToolsName[0]?.find(
-                          (s) => s.tool === tool.toolsName
+                          (s) => s.tool === tool.toolsName,
                         );
                         const session2Tool = selectedToolsName[1]?.find(
-                          (s) => s.tool === tool.toolsName
+                          (s) => s.tool === tool.toolsName,
                         );
                         const session3Tool = selectedToolsName[2]?.find(
-                          (s) => s.tool === tool.toolsName
+                          (s) => s.tool === tool.toolsName,
                         );
 
                         const renderStatus = (sessionTool) => {
@@ -837,9 +846,7 @@ const Dashboard = () => {
                     <span className="p-3 rounded-full bg-red-600/20 text-red-400 border border-red-500">
                       <TriangleAlert />
                     </span>
-                    <h3 className="text-2xl font-bold">
-                      {alertCounts?.open}
-                    </h3>
+                    <h3 className="text-2xl font-bold">{alertCounts?.open}</h3>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -860,7 +867,9 @@ const Dashboard = () => {
                     <span className="p-3 rounded-full bg-yellow-600/20 text-red-400 border border-red-500">
                       <Rotate3d />
                     </span>
-                    <h3 className="text-2xl font-bold">{alertCounts?.escalated}</h3>
+                    <h3 className="text-2xl font-bold">
+                      {alertCounts?.escalated}
+                    </h3>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -881,7 +890,9 @@ const Dashboard = () => {
                     <span className="p-3 rounded-full bg-pink-600/20 text-pink-400 border border-pink-500">
                       <BrickWallShield />
                     </span>
-                    <h3 className="text-2xl font-bold">{alertCounts?.incidence}</h3>
+                    <h3 className="text-2xl font-bold">
+                      {alertCounts?.incidence}
+                    </h3>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -902,7 +913,9 @@ const Dashboard = () => {
                     <span className="p-3 rounded-full bg-yellow-600/20 text-yellow-400 border border-yellow-500">
                       <PanelBottomClose />
                     </span>
-                    <h3 className="text-2xl font-bold">{alertCounts?.closed}</h3>
+                    <h3 className="text-2xl font-bold">
+                      {alertCounts?.closed}
+                    </h3>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -990,7 +1003,7 @@ const Dashboard = () => {
                           <div>
                             <strong>Accepted Time:</strong>{" "}
                             {formatDateTimeReadable(
-                              alertView.acceptedTime || ""
+                              alertView.acceptedTime || "",
                             )}
                           </div>
                           <div>
@@ -1111,7 +1124,7 @@ const Dashboard = () => {
                                   <div>
                                     <strong>Investigation End Time:</strong>{" "}
                                     {formatDateTimeReadable(
-                                      alertView.investigationEndTime
+                                      alertView.investigationEndTime,
                                     )}
                                   </div>
                                   <div>
@@ -1157,7 +1170,7 @@ const Dashboard = () => {
                                               </li>
                                             </ul>
                                           </div>
-                                        )
+                                        ),
                                       )}
                                   </div>
 
@@ -1219,7 +1232,7 @@ const Dashboard = () => {
                                                     </div>
                                                   </div>
                                                 </div>
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         </div>

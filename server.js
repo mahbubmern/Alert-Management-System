@@ -57,7 +57,7 @@ const server = http.createServer(app);
 // });
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // your frontend URL
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true, // allow cookies
   },
 });
@@ -100,13 +100,14 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [process.env.CLIENT_URL || "http://localhost:3000"],
     credentials: true,
   })
 );
 
 // Set Static Folder
-app.use("/files", express.static(path.join(__dirname, "../Uploads/Alerts")));
+// app.use("/files", express.static(path.join(__dirname, "../Uploads/Alerts")));
+app.use("/files", express.static(process.env.FILE_UPLOAD_PATH));
 
 // set Routes
 app.use("/api/v1/user", userRoute);

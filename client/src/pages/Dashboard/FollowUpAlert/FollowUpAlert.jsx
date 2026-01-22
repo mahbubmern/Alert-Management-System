@@ -49,6 +49,7 @@ import AlertStepper from "../../../components/Stepper/Stepper.jsx";
 import { useDebounce } from "../../../hooks/debounce.jsx";
 import API from "../../../utils/api.js";
 
+
 const FollowUpAlert = () => {
   // for print helper
 
@@ -86,26 +87,14 @@ const FollowUpAlert = () => {
 
   const [showPdf, setShowPdf] = useState(false);
 
-
   // Pagination State
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const selectedPage = useRef(1);
   const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const debouncedSearchTerm = useDebounce(searchTerm, 300); // wait 300ms
-
-
-
-
-
-
-
-
-
-
-
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // wait 300ms
 
   const [alertId, setAlertId] = useState({
     alertId: "",
@@ -247,7 +236,7 @@ const FollowUpAlert = () => {
             const alertList = alertResult.payload.alert; // ✅ get the array safely
 
             const updatedAlert = alertList.find(
-              (item) => item._id === input._id
+              (item) => item._id === input._id,
             );
 
             if (updatedAlert?.communicationLog) {
@@ -272,22 +261,29 @@ const FollowUpAlert = () => {
     }
   };
 
-  const handleFileShow = (file) => {
-    const fileName = file && file;
-    const halffilepath = `http://localhost:5050/files`;
-    const filePath = `${halffilepath}/${file}`;
+  // const handleFileShow = (file) => {
+  //   console.log(file);
+
+  //   const fileName = file && file;
+  //   const baseURL = import.meta.env.VITE_APP_URL;
+  //   // const halffilepath = `${baseURL}/files`;
+  //   const filePath = `${baseURL}/files/${file}`;
+  //   window.open(filePath, "_blank");
+  // };
+
+
+const handleFileShow = (file) => {
+
+    const baseURL = import.meta.env.VITE_APP_URL; 
+
+    const filePath = `${baseURL}/files/${encodeURIComponent(file)}`;
+
     window.open(filePath, "_blank");
-  };
+};
 
   useEffect(() => {
     dispatch(getAllAlert());
   }, [dispatch]);
-
-
-
-
-
-
 
   // useEffect(() => {
   //   if (!user?._id || !Array.isArray(alert)) return;
@@ -430,7 +426,6 @@ const FollowUpAlert = () => {
   //   // new tailwind design
   // for table
 
-
   const [sortConfig, setSortConfig] = useState({
     key: "index",
     direction: "descending",
@@ -505,8 +500,8 @@ const FollowUpAlert = () => {
     if (searchTerm) {
       sortableData = sortableData.filter((item) =>
         Object.values(item).some((val) =>
-          val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          val?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
       );
     }
 
@@ -527,7 +522,7 @@ const FollowUpAlert = () => {
     const formattedEventTime = formatDateTimeReadable(row.eventTime);
     const formattedUpdatedTime = formatDateTimeReadable(row.acceptedTime);
     const investigationEndTime = formatDateTimeReadable(
-      row.investigationEndTime
+      row.investigationEndTime,
     );
     setInput({
       ...row,
@@ -607,53 +602,54 @@ const FollowUpAlert = () => {
     });
   };
 
+  // FETCH FUNCTION
+  const fetchFollowUp = async () => {
+    try {
+      setLoading(true);
+      // CALL THE NEW API WITH view="follow up"
+      const response = await API.get(
+        `/api/v1/alert/paginated?page=${selectedPage.current}&limit=${limit}&view=follow_up&search=${encodeURIComponent(
+          debouncedSearchTerm,
+        )}`,
+      );
 
+      const { alerts, pagination } = response.data.data;
 
+      setData(alerts);
+      setTotalPages(pagination.totalPages);
+      setTotalRecords(pagination.totalAlerts);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+      // Optional: Add toast error here
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Trigger fetch on mount or page change
+  useEffect(() => {
+    fetchFollowUp();
+  }, [
+    limit,
+    debouncedSearchTerm,
+    dispatch,
+    selectedPage,
+    alert,
+    user._id,
+    user.role,
+  ]); // Add other dependencies if needed
 
-    // FETCH FUNCTION
-    const fetchFollowUp = async () => {
-      try {
-        setLoading(true);
-        // CALL THE NEW API WITH view="follow up"
-        const response = await API.get(
-          `/api/v1/alert/paginated?page=${selectedPage.current}&limit=${limit}&view=follow_up&search=${encodeURIComponent(
-          debouncedSearchTerm
-        )}`
-        );
-  
-        const { alerts, pagination } = response.data.data;
-        
-        setData(alerts);
-        setTotalPages(pagination.totalPages);
-        setTotalRecords(pagination.totalAlerts);
-      } catch (error) {
-        console.error("Error fetching alerts:", error);
-        // Optional: Add toast error here
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    // Trigger fetch on mount or page change
-    useEffect(() => {
-      fetchFollowUp();
-    }, [limit, debouncedSearchTerm, dispatch, selectedPage, alert,user._id, user.role]); // Add other dependencies if needed
-  
-  
-    
-  
-    const handlePageClick = (e) => {
-      selectedPage.current = e.selected + 1;
-      fetchFollowUp();
-    };
-  
-      const changeLimit = (newLimit) => {
-      const parsedLimit = parseInt(newLimit);
-      setLimit(parsedLimit);
-      selectedPage.current = 1;
-      fetchFollowUp();
-    };
+  const handlePageClick = (e) => {
+    selectedPage.current = e.selected + 1;
+    fetchFollowUp();
+  };
+
+  const changeLimit = (newLimit) => {
+    const parsedLimit = parseInt(newLimit);
+    setLimit(parsedLimit);
+    selectedPage.current = 1;
+    fetchFollowUp();
+  };
 
   return (
     <>
@@ -676,18 +672,31 @@ const FollowUpAlert = () => {
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-4">
                   <select
-                      value={limit} // keeps UI in sync with state
-                      onChange={(e) => changeLimit(e.target.value)}
-                      name="pageSize"
-                      id="pageSize"
-                      className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                    </select>
-                     <p> <span className="text-xs text-cyan-600">Showing page {selectedPage.current} of {totalPages}</span> &nbsp; <span className="font-bold text-sm text-amber-600">Alerts</span> &nbsp;: <span className="text-sm text-cyan-400">{totalRecords}</span> </p>
+                    value={limit} // keeps UI in sync with state
+                    onChange={(e) => changeLimit(e.target.value)}
+                    name="pageSize"
+                    id="pageSize"
+                    className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                  </select>
+                  <p>
+                    {" "}
+                    <span className="text-xs text-cyan-600">
+                      Showing page {selectedPage.current} of {totalPages}
+                    </span>{" "}
+                    &nbsp;{" "}
+                    <span className="font-bold text-sm text-amber-600">
+                      Alerts
+                    </span>{" "}
+                    &nbsp;:{" "}
+                    <span className="text-sm text-cyan-400">
+                      {totalRecords}
+                    </span>{" "}
+                  </p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3  top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -705,7 +714,6 @@ const FollowUpAlert = () => {
                   <table className="w-full text-left">
                     <thead className="border-b border-gray-700">
                       <tr>
-                       
                         {tableHeaders.map((header) => {
                           const key = {
                             View: null,
@@ -746,7 +754,6 @@ const FollowUpAlert = () => {
                             key={index}
                             className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors "
                           >
-                           
                             <td className="p-2 font-medium text-sm text-white">
                               {item.author?.name}
                             </td>
@@ -837,7 +844,7 @@ const FollowUpAlert = () => {
                                 ]?.includes(user.role);
                                 const count =
                                   unreadCountMap[alertId]?.filter(
-                                    (item) => item === user.role
+                                    (item) => item === user.role,
                                   ).length || 0;
 
                                 return (
@@ -883,8 +890,8 @@ const FollowUpAlert = () => {
 
                                     {/* Transfer (Admin only) */}
                                     {(user.role === "Admin" ||
-                                  user.role === "SOC Manager" ||
-                                  user.role === "CISO") && (
+                                      user.role === "SOC Manager" ||
+                                      user.role === "CISO") && (
                                       <button
                                         onClick={() => handleTransfer(item)}
                                         className="bg-yellow-500 hover:bg-yellow-400 text-white text-xs px-2 py-1 rounded flex items-center gap-1 cursor-pointer"
@@ -912,9 +919,8 @@ const FollowUpAlert = () => {
                     </tbody>
                   </table>
 
-
-                                     {/* react paginate */}
-                                    <ReactPaginate
+                  {/* react paginate */}
+                  <ReactPaginate
                     previousLabel="Prev"
                     nextLabel="Next"
                     breakLabel="..."
@@ -924,19 +930,16 @@ const FollowUpAlert = () => {
                     onPageChange={handlePageClick}
                     // container flex row, responsive spacing
                     containerClassName="flex flex-wrap justify-center md:justify-end gap-2 mt-4"
-                    
                     // li wrapper minimal
                     pageClassName="list-none"
                     previousClassName="list-none"
                     nextClassName="list-none"
                     breakClassName="list-none"
-                  
                     // clickable <a> styles
                     pageLinkClassName="px-2 py-1 text-xs md:text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     previousLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     nextLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
                     breakLinkClassName="px-2 py-1 text-xs border rounded cursor-default block"
-                  
                     activeClassName="bg-blue-500 text-white"
                   />
 
@@ -972,14 +975,6 @@ const FollowUpAlert = () => {
                       </button>
                     </div>
                   </div> */}
-
-
-
-
-
-
-
-
                 </div>
               </div>
             </div>
@@ -1319,7 +1314,7 @@ const FollowUpAlert = () => {
                                   (field.isPerformed === "performed" &&
                                     hasComments)
                                 );
-                              }
+                              },
                             );
 
                             return (
@@ -1400,7 +1395,7 @@ const FollowUpAlert = () => {
                         <>
                           {input.isIncidence === "yes" &&
                             !filledFields2.some(
-                              (field) => field.key === "irp"
+                              (field) => field.key === "irp",
                             ) && (
                               <div className="mt-4 bg-gray-800/50 rounded-2xl p-6 shadow-md border border-gray-700">
                                 <h3 className="text-red-400 text-lg font-semibold mb-3">
@@ -1511,7 +1506,7 @@ const FollowUpAlert = () => {
                                       name="l2ResolutionTimestamp"
                                       value={formatForDateTimeLocal(
                                         input.l2ResolutionTimestamp ||
-                                          currentDate
+                                          currentDate,
                                       )}
                                       disabled
                                       onChange={handleDateChange}
@@ -1523,7 +1518,7 @@ const FollowUpAlert = () => {
                                       name="investigationEndTime"
                                       value={formatForDateTimeLocal(
                                         input.l2ResolutionTimestamp ||
-                                          currentDate
+                                          currentDate,
                                       )}
                                       onChange={handleDateChange}
                                       className="w-full bg-transparent border border-gray-600 text-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
@@ -1578,25 +1573,21 @@ const FollowUpAlert = () => {
                         </>
                       )}
 
-                      {(user.role === "Level_1" ||
+                      {user.role === "Level_1" ||
                       input.incidentDeclarationRequired === "yes" ||
-                      input.incidentDeclarationRequired === "no") ? (
-                        ""
-                      ) : 
-                      
-                      // (
-                      //   <button
-                      //     type="submit"
-                      //     className="w-full mt-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-xl shadow-md transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
-                      //     disabled={alertLoader}
-                      //   >
-                      //     <i className="fa-regular fa-paper-plane"></i>
-                      //     {alertLoader ? "Editing..." : "Edit"}
-                      //   </button>
-                      // )
-                      ("")
-                      
-                      }
+                      input.incidentDeclarationRequired === "no"
+                        ? ""
+                        : // (
+                          //   <button
+                          //     type="submit"
+                          //     className="w-full mt-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-xl shadow-md transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                          //     disabled={alertLoader}
+                          //   >
+                          //     <i className="fa-regular fa-paper-plane"></i>
+                          //     {alertLoader ? "Editing..." : "Edit"}
+                          //   </button>
+                          // )
+                          ""}
                     </div>
                   </motion.div>
                 )}

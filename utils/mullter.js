@@ -8,7 +8,8 @@ const __dirname = dirname(__filename);
 // Create Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const publicPath = join(__dirname, "../../Uploads/Alerts/");
+    // const publicPath = join(__dirname, "../../Uploads/Alerts/");
+     const publicPath = process.env.FILE_UPLOAD_PATH;
     cb(null, publicPath);
   },
   filename: (req, file, cb) => {

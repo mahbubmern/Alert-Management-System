@@ -100,9 +100,7 @@ const SelfAssigned = () => {
     alertId: "",
     acceptedBy: "",
     assignedTo: [],
-    
   });
-
 
   // Pagination State
   const [limit, setLimit] = useState(10);
@@ -110,8 +108,8 @@ const SelfAssigned = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const selectedPage = useRef(1);
   const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const debouncedSearchTerm = useDebounce(searchTerm, 300); // wait 300ms
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // wait 300ms
 
   // selectedUser
 
@@ -154,7 +152,7 @@ const SelfAssigned = () => {
     try {
       // 1. Call the new lightweight endpoint
       const response = await API.get("/api/v1/user/roles");
-      
+
       // 2. The backend already did the filtering and unique logic
       const uniqueRoles = response.data.roles || [];
 
@@ -311,9 +309,6 @@ const SelfAssigned = () => {
 
   // handle level 2 investigation Submit
 
-
- 
-
   const handle_Lavel_2_InvestigationSubmit = async (e) => {
     e.preventDefault();
 
@@ -354,107 +349,96 @@ const SelfAssigned = () => {
       L2verdict,
     };
 
-
-    
-        
-if (L2verdict === "false_positive") {
-  if ((forwardTo?.length || 0) === 0) {
-    // forwardTo নেই → handBackNoteToL1 mandatory
-    if (!handBackNoteToL1?.trim()) {
-      createToast("Hand Back Note must be filled Up", "error");
-      return;
+    if (L2verdict === "false_positive") {
+      if ((forwardTo?.length || 0) === 0) {
+        // forwardTo নেই → handBackNoteToL1 mandatory
+        if (!handBackNoteToL1?.trim()) {
+          createToast("Hand Back Note must be filled Up", "error");
+          return;
+        }
+        data.handBackNoteToL1 = handBackNoteToL1;
+      } else {
+        // forwardTo আছে → needToDo mandatory
+        if (
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length
+        ) {
+          createToast("Please select the user and create Note", "error");
+          return;
+        }
+        data.forwardTo = forwardTo;
+        data.needToDo = needToDo;
+      }
     }
-    data.handBackNoteToL1 = handBackNoteToL1;
-  } else {
-    // forwardTo আছে → needToDo mandatory
-    if (
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length
-    ) {
-      createToast("Please select the user and create Note", "error");
-      return;
-    }
-    data.forwardTo = forwardTo;
-    data.needToDo = needToDo;
-  }
-}
-
 
     if (
       (L2verdict === "true_positive" &&
-      incidentDeclarationRequired === "Choose") || (L2verdict === "true_positive" &&
-      !incidentDeclarationRequired?.trim())
+        incidentDeclarationRequired === "Choose") ||
+      (L2verdict === "true_positive" && !incidentDeclarationRequired?.trim())
     ) {
       createToast("Incident Declarion Field must be filled up", "error");
       return;
     }
 
-
-  if (
-  L2verdict === "true_positive" &&
-  incidentDeclarationRequired === "no" &&
-  isIncidence === "pending"
-) {
-  // L2 Remediation Plan mandatory
-  if (!l2RemediationPlan?.trim()) {
-    createToast("You must provide L2 Remediation Plan", "error");
-    return;
-  }
-
-  if ((forwardTo?.length || 0) === 0) {
-    // forwardTo নেই → handBackNoteToL1 mandatory
-    if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-      createToast("All fields are required", "error");
-      return;
-    }
-
-    data.l2RemediationPlan = l2RemediationPlan;
-    data.l2RemediationValidation = l2RemediationValidation;
-    data.handBackNoteToL1 = handBackNoteToL1;
-  } else {
-    // forwardTo আছে → needToDo mandatory
     if (
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length
+      L2verdict === "true_positive" &&
+      incidentDeclarationRequired === "no" &&
+      isIncidence === "pending"
     ) {
-      createToast("Please select the user and create Note", "error");
-      return;
+      // L2 Remediation Plan mandatory
+      if (!l2RemediationPlan?.trim()) {
+        createToast("You must provide L2 Remediation Plan", "error");
+        return;
+      }
+
+      if ((forwardTo?.length || 0) === 0) {
+        // forwardTo নেই → handBackNoteToL1 mandatory
+        if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
+          createToast("All fields are required", "error");
+          return;
+        }
+
+        data.l2RemediationPlan = l2RemediationPlan;
+        data.l2RemediationValidation = l2RemediationValidation;
+        data.handBackNoteToL1 = handBackNoteToL1;
+      } else {
+        // forwardTo আছে → needToDo mandatory
+        if (
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length
+        ) {
+          createToast("Please select the user and create Note", "error");
+          return;
+        }
+
+        data.l2RemediationPlan = l2RemediationPlan;
+        data.forwardTo = forwardTo;
+        data.needToDo = needToDo;
+      }
+
+      // Common fields
+      data.incidentDeclarationRequired = incidentDeclarationRequired;
+      data.isIncidence = isIncidence;
+      data.L2verdict = L2verdict;
     }
 
-    data.l2RemediationPlan = l2RemediationPlan;
-    data.forwardTo = forwardTo;
-    data.needToDo = needToDo;
-  }
+    // if (L2verdict === "true_positive" && incidentDeclarationRequired === "no" && isIncidence === "pending"  ) {
 
-  // Common fields
-  data.incidentDeclarationRequired = incidentDeclarationRequired;
-  data.isIncidence = isIncidence;
-  data.L2verdict = L2verdict;
-}
-
-
-
-
-   // if (L2verdict === "true_positive" && incidentDeclarationRequired === "no" && isIncidence === "pending"  ) {
-   
     //   console.log(L2verdict,incidentDeclarationRequired,isIncidence,l2RemediationPlan, l2RemediationValidation,handBackNoteToL1, forwardTo);
-    
-    
-    // }
 
+    // }
 
     // if (L2verdict === "true_positive" && incidentDeclarationRequired === "no" && isIncidence === "pending" &&  l2RemediationPlan?.trim() && !handBackNoteToL1?.trim() && !l2RemediationValidation?.trim()   ) {
 
-   
     //   if (
 
     //     (forwardTo?.length > 0 && Object.keys(needToDo).length === 0) ||
     //     (forwardTo?.length > 0 &&
     //       forwardTo?.length !== Object.keys(needToDo).length) ||
     //     // !handBackNoteToL1?.trim() ||
-    //     !l2RemediationPlan?.trim() 
+    //     !l2RemediationPlan?.trim()
     //     // !l2RemediationValidation?.trim()
     //   ) {
     //     createToast("All fields are required", "error");
@@ -467,293 +451,227 @@ if (L2verdict === "false_positive") {
     //   data.isIncidence = isIncidence;
     // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     if (
       L2verdict === "true_positive" &&
       incidentDeclarationRequired === "yes" &&
       isIncidence == "pending"
     ) {
-   
+      if ((forwardTo?.length || 0) === 0) {
+        // forwardTo none → Incident Declaration Reason mandatory
+        if (!incidentDeclarationReason?.trim()) {
+          createToast("Incident Declaration Reason Must be filledUp", "error");
 
+          return;
+        }
 
-  if ((forwardTo?.length || 0) === 0) {
-    // forwardTo none → Incident Declaration Reason mandatory
-      if (!incidentDeclarationReason?.trim()) {
-        createToast("Incident Declaration Reason Must be filledUp", "error");
+        data.incidentDeclarationReason = incidentDeclarationReason;
+      } else {
+        // forwardTo value having → needToDo mandatory
+        if (
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length
+        ) {
+          createToast("Please select the user and create Note", "error");
+          return;
+        }
 
+        data.incidentDeclarationReason = incidentDeclarationReason;
+        data.forwardTo = forwardTo;
+        data.needToDo = needToDo;
+      }
+
+      // Common fields
+      data.incidentDeclarationRequired = incidentDeclarationRequired;
+      data.isIncidence = isIncidence;
+      data.L2verdict = L2verdict;
+    }
+
+    //     if (
+    //   L2verdict === "true_positive" &&
+    //   incidentDeclarationRequired === "yes" &&
+    //   isIncidence === "yes"
+    // ) {
+    //   const safeForwardTo = Array.isArray(forwardTo) ? forwardTo : [];
+    //   const safeNeedToDo =
+    //     needToDo && typeof needToDo === "object" ? needToDo : {};
+
+    //   // Common required fields
+    //   if (!irp || !rootCause?.trim() || !l2RemediationPlan?.trim()) {
+    //     createToast("All fields are required", "error");
+    //     return;
+    //   }
+
+    //   if (safeForwardTo.length === 0) {
+    //     // Case: forwardTo not selected
+    //     if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
+    //       createToast(
+    //         "Remediation Validation and Hand Back Note must be filled up",
+    //         "error"
+    //       );
+    //       return;
+    //     }
+
+    //     data.irp = irp;
+    //     data.isIncidence = isIncidence;
+    //     data.incidentDeclarationRequired = incidentDeclarationRequired;
+    //     data.rootCause = rootCause;
+    //     data.l2RemediationPlan = l2RemediationPlan;
+    //     data.l2RemediationValidation = l2RemediationValidation;
+    //     data.handBackNoteToL1 = handBackNoteToL1;
+    //   } else {
+    //     // Case: forwardTo selected
+    //     if (
+    //       Object.keys(safeNeedToDo).length === 0 ||
+    //       safeForwardTo.length !== Object.keys(safeNeedToDo).length
+    //     ) {
+    //       createToast("Need To Do fields are required", "error");
+    //       return;
+    //     }
+
+    //     data.irp = irp;
+    //     data.isIncidence = isIncidence;
+    //     data.incidentDeclarationRequired = incidentDeclarationRequired;
+    //     data.rootCause = rootCause;
+    //     data.l2RemediationPlan = l2RemediationPlan;
+    //     data.forwardTo = safeForwardTo;
+    //     data.needToDo = safeNeedToDo;
+    //   }
+    // }
+
+    if (
+      L2verdict === "true_positive" &&
+      incidentDeclarationRequired === "yes" &&
+      isIncidence === "yes"
+    ) {
+      // 🔎 Mandatory field checks
+      const mandatoryChecks = [
+        { field: irp, message: "IRP must be filled up" },
+        { field: rootCause, message: "Root Cause Analysis must be filled up" },
+        {
+          field: l2RemediationPlan,
+          message: "L2 Remediation Plan must be filled up",
+        },
+      ];
+
+      for (const { field, message } of mandatoryChecks) {
+        if (!field?.trim() || field === "Choose") {
+          createToast(message, "error");
+          return;
+        }
+      }
+
+      if ((forwardTo?.length || 0) === 0) {
+        // 📝 forwardTo empty → l2RemediationValidation + handBackNoteToL1 mandatory
+        if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
+          createToast(
+            "L2 Remediation Validation & Hand Back Note must be filled up",
+            "error",
+          );
+          return;
+        }
+
+        Object.assign(data, {
+          irp,
+          rootCause,
+          l2RemediationPlan,
+          l2RemediationValidation,
+          handBackNoteToL1,
+        });
+      } else {
+        // 📝 forwardTo has value → needToDo mandatory
+        const needToDoInvalid =
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length;
+
+        if (needToDoInvalid) {
+          createToast("Please select the user and create Note", "error");
+          return;
+        }
+
+        Object.assign(data, {
+          irp,
+          rootCause,
+          l2RemediationPlan,
+          forwardTo,
+          needToDo,
+        });
+      }
+
+      // ✅ Common fields
+      Object.assign(data, {
+        incidentDeclarationRequired,
+        isIncidence,
+        L2verdict,
+      });
+    }
+
+    // code started to rewrite here dated on 9/12/2025
+
+    // if ( L2verdict === "true_positive" &&
+    //   incidentDeclarationRequired === "yes" &&
+    //   isIncidence === "yes" && alertView?.fieldsToFill?.length > 0) {
+
+    //     if (!l2RemediationValidation?.trim() ||
+    //          !handBackNoteToL1?.trim()) {
+    //        createToast("L2 RemediationValidation & Hand Back Note Must be filled up", "error");
+    //         return;
+    //     }
+
+    //      data.l2RemediationValidation = l2RemediationValidation;
+    //      data.handBackNoteToL1 = handBackNoteToL1;
+    //      data.fieldsToFill = alertView?.fieldsToFill;
+
+    // }
+
+    if (
+      L2verdict === "true_positive" &&
+      incidentDeclarationRequired === "yes" &&
+      isIncidence === "no"
+    ) {
+      // ✅ L2 Remediation Plan mandatory
+      if (!l2RemediationPlan?.trim()) {
+        createToast("L2 Remediation Plan must be filled up", "error");
         return;
       }
 
-    data.incidentDeclarationReason = incidentDeclarationReason;
-  } else {
-    // forwardTo value having → needToDo mandatory
-    if (
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length
-    ) {
-      createToast("Please select the user and create Note", "error");
-      return;
+      if ((forwardTo?.length || 0) === 0) {
+        // forwardTo নেই → l2RemediationValidation + handBackNoteToL1 mandatory
+        if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
+          createToast("All fields are required", "error");
+          return;
+        }
+
+        data.l2RemediationPlan = l2RemediationPlan;
+        data.l2RemediationValidation = l2RemediationValidation;
+        data.handBackNoteToL1 = handBackNoteToL1;
+      } else {
+        // forwardTo আছে → needToDo mandatory
+        if (
+          !needToDo ||
+          Object.keys(needToDo).length === 0 ||
+          forwardTo.length !== Object.keys(needToDo).length
+        ) {
+          createToast("Please select the user and create Note", "error");
+          return;
+        }
+
+        data.l2RemediationPlan = l2RemediationPlan;
+        data.forwardTo = forwardTo;
+        data.needToDo = needToDo;
+      }
+
+      // ✅ Common fields
+      data.incidentDeclarationRequired = incidentDeclarationRequired;
+      data.isIncidence = isIncidence;
+      data.L2verdict = L2verdict;
     }
-
-    data.incidentDeclarationReason = incidentDeclarationReason;
-    data.forwardTo = forwardTo;
-    data.needToDo = needToDo;
-  }
-
-  // Common fields
-  data.incidentDeclarationRequired = incidentDeclarationRequired;
-  data.isIncidence = isIncidence;
-  data.L2verdict = L2verdict;
-
-    }
-
-
-
-
-
-
-
-
-
-//     if (
-//   L2verdict === "true_positive" &&
-//   incidentDeclarationRequired === "yes" &&
-//   isIncidence === "yes"
-// ) {
-//   const safeForwardTo = Array.isArray(forwardTo) ? forwardTo : [];
-//   const safeNeedToDo =
-//     needToDo && typeof needToDo === "object" ? needToDo : {};
-
-//   // Common required fields
-//   if (!irp || !rootCause?.trim() || !l2RemediationPlan?.trim()) {
-//     createToast("All fields are required", "error");
-//     return;
-//   }
-
-//   if (safeForwardTo.length === 0) {
-//     // Case: forwardTo not selected
-//     if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-//       createToast(
-//         "Remediation Validation and Hand Back Note must be filled up",
-//         "error"
-//       );
-//       return;
-//     }
-
-//     data.irp = irp;
-//     data.isIncidence = isIncidence;
-//     data.incidentDeclarationRequired = incidentDeclarationRequired;
-//     data.rootCause = rootCause;
-//     data.l2RemediationPlan = l2RemediationPlan;
-//     data.l2RemediationValidation = l2RemediationValidation;
-//     data.handBackNoteToL1 = handBackNoteToL1;
-//   } else {
-//     // Case: forwardTo selected
-//     if (
-//       Object.keys(safeNeedToDo).length === 0 ||
-//       safeForwardTo.length !== Object.keys(safeNeedToDo).length
-//     ) {
-//       createToast("Need To Do fields are required", "error");
-//       return;
-//     }
-
-//     data.irp = irp;
-//     data.isIncidence = isIncidence;
-//     data.incidentDeclarationRequired = incidentDeclarationRequired;
-//     data.rootCause = rootCause;
-//     data.l2RemediationPlan = l2RemediationPlan;
-//     data.forwardTo = safeForwardTo;
-//     data.needToDo = safeNeedToDo;
-//   }
-// }
-
-
-if (
-  L2verdict === "true_positive" &&
-  incidentDeclarationRequired === "yes" &&
-  isIncidence === "yes"
-) {
-
-
-  
-  // 🔎 Mandatory field checks
-  const mandatoryChecks = [
-    { field: irp, message: "IRP must be filled up" },
-    { field: rootCause, message: "Root Cause Analysis must be filled up" },
-    { field: l2RemediationPlan, message: "L2 Remediation Plan must be filled up" },
-  ];
-
-  for (const { field, message } of mandatoryChecks) {
-    if (!field?.trim() || field === "Choose") {
-      createToast(message, "error");
-      return;
-    }
-  }
-
-  if ((forwardTo?.length || 0) === 0) {
-    // 📝 forwardTo empty → l2RemediationValidation + handBackNoteToL1 mandatory
-    if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-      createToast("L2 Remediation Validation & Hand Back Note must be filled up", "error");
-      return;
-    }
-
-    Object.assign(data, {
-      irp,
-      rootCause,
-      l2RemediationPlan,
-      l2RemediationValidation,
-      handBackNoteToL1,
-    });
-  } else {
-    // 📝 forwardTo has value → needToDo mandatory
-    const needToDoInvalid =
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length;
-
-    if (needToDoInvalid) {
-      createToast("Please select the user and create Note", "error");
-      return;
-    }
-
-    Object.assign(data, {
-      irp,
-      rootCause,
-      l2RemediationPlan,
-      forwardTo,
-      needToDo,
-    });
-  }
-
-  // ✅ Common fields
-  Object.assign(data, {
-    incidentDeclarationRequired,
-    isIncidence,
-    L2verdict,
-  });
-}
-
-
-
-// code started to rewrite here dated on 9/12/2025
-
-
-
-
-// if ( L2verdict === "true_positive" &&
-//   incidentDeclarationRequired === "yes" &&
-//   isIncidence === "yes" && alertView?.fieldsToFill?.length > 0) {
-
-
-//     if (!l2RemediationValidation?.trim() ||
-//          !handBackNoteToL1?.trim()) {
-//        createToast("L2 RemediationValidation & Hand Back Note Must be filled up", "error");
-//         return;
-//     }
-
-//      data.l2RemediationValidation = l2RemediationValidation;
-//      data.handBackNoteToL1 = handBackNoteToL1;
-//      data.fieldsToFill = alertView?.fieldsToFill;
-
-
-     
-  
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if (
-  L2verdict === "true_positive" &&
-  incidentDeclarationRequired === "yes" &&
-  isIncidence === "no"
-) {
-  // ✅ L2 Remediation Plan mandatory
-  if (!l2RemediationPlan?.trim()) {
-    createToast("L2 Remediation Plan must be filled up", "error");
-    return;
-  }
-
-  if ((forwardTo?.length || 0) === 0) {
-    // forwardTo নেই → l2RemediationValidation + handBackNoteToL1 mandatory
-    if (!l2RemediationValidation?.trim() || !handBackNoteToL1?.trim()) {
-      createToast("All fields are required", "error");
-      return;
-    }
-
-    data.l2RemediationPlan = l2RemediationPlan;
-    data.l2RemediationValidation = l2RemediationValidation;
-    data.handBackNoteToL1 = handBackNoteToL1;
-  } else {
-    // forwardTo আছে → needToDo mandatory
-    if (
-      !needToDo ||
-      Object.keys(needToDo).length === 0 ||
-      forwardTo.length !== Object.keys(needToDo).length
-    ) {
-      createToast("Please select the user and create Note", "error");
-      return;
-    }
-
-    data.l2RemediationPlan = l2RemediationPlan;
-    data.forwardTo = forwardTo;
-    data.needToDo = needToDo;
-  }
-
-  // ✅ Common fields
-  data.incidentDeclarationRequired = incidentDeclarationRequired;
-  data.isIncidence = isIncidence;
-  data.L2verdict = L2verdict;
-}
-
 
     // if (
     //   L2verdict === "true_positive" &&
     //   incidentDeclarationRequired == "no" &&
-    //   isIncidence == "no" &&  handBackNoteToL1?.trim() && l2RemediationValidation?.trim() 
+    //   isIncidence == "no" &&  handBackNoteToL1?.trim() && l2RemediationValidation?.trim()
     // ) {
     //   // const safeForwardTo = Array.isArray(forwardTo) ? forwardTo : [];
     //   // const safeNeedToDo =
@@ -814,16 +732,6 @@ if (
     //   data.needToDo = safeNeedToDo;
     // }
 
-
-
-
-
-
-
-
-
-
-
     // if (
     //   L2verdict === "true_positive" &&
     //   incidentDeclarationRequired == "yes" &&
@@ -834,16 +742,10 @@ if (
     // }
 
     try {
-
-      
-      
-    //  // Dispatch update action
+      //  // Dispatch update action
       const result = await dispatch(
-        updateLevel2InvestigationAlert({ id: _id, data })
+        updateLevel2InvestigationAlert({ id: _id, data }),
       );
-
-
-      
 
       if (updateLevel2InvestigationAlert.fulfilled.match(result)) {
         // Clear form
@@ -872,7 +774,7 @@ if (
     } catch (error) {
       console.error(
         "Alert update failed:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       createToast("Something went wrong", "error");
     }
@@ -898,8 +800,6 @@ if (
           formData.append("_id", input._id);
           formData.append("verdict", input.verdict);
           formData.append("fpNote", input.fpNote);
-
-
 
           if (input.forwardTo) {
             // Handle the "to" field as an array
@@ -938,35 +838,39 @@ if (
     //  IF Verdict is true_positive
 
     if (input.verdict === "true_positive" && input.escalation == "no") {
+      // input.forwardTo?.length === 0 ||
+      // (input.forwardTo?.length > 0 &&
+      //   Object.keys(input.needToDo).length === 0) ||
+      // (input.forwardTo?.length > 0 &&
+      //   input.forwardTo?.length !== Object.keys(input.needToDo).length)
 
-        // input.forwardTo?.length === 0 ||
-        // (input.forwardTo?.length > 0 &&
-        //   Object.keys(input.needToDo).length === 0) ||
-        // (input.forwardTo?.length > 0 &&
-        //   input.forwardTo?.length !== Object.keys(input.needToDo).length)
-      
       if (
         !input.verdict?.trim() ||
         !input.tpImpact?.trim() ||
         !input.caseDetails?.trim() ||
         !input.tpRemedationNote?.trim() ||
-        input.tpImpact === "Choose" 
+        input.tpImpact === "Choose"
       ) {
         createToast("All fields are required");
         return;
       }
 
-        const safeForwardTo = Array.isArray(input.forwardTo) ? input.forwardTo : [];
-            const safeNeedToDo =
-        input.needToDo && typeof input.needToDo === "object" ? input.needToDo : {};
+      const safeForwardTo = Array.isArray(input.forwardTo)
+        ? input.forwardTo
+        : [];
+      const safeNeedToDo =
+        input.needToDo && typeof input.needToDo === "object"
+          ? input.needToDo
+          : {};
 
-
-        if ((safeForwardTo.length > 0 && Object.keys(safeNeedToDo).length === 0) ||
+      if (
+        (safeForwardTo.length > 0 && Object.keys(safeNeedToDo).length === 0) ||
         (safeForwardTo.length > 0 &&
-          safeForwardTo.length !== Object.keys(safeNeedToDo).length)) {
-          createToast("All fields are required");
-            return 
-        }
+          safeForwardTo.length !== Object.keys(safeNeedToDo).length)
+      ) {
+        createToast("All fields are required");
+        return;
+      }
       Swal.fire({
         icon: "warning",
         title: "Are you sure?",
@@ -985,18 +889,18 @@ if (
           formData.append("caseDetails", input.caseDetails);
           formData.append("tpRemedationNote", input.tpRemedationNote);
 
-           // ✅ ForwardTo handling
-      if (Array.isArray(input.forwardTo) && input.forwardTo.length > 0) {
-        formData.append("forwardTo", JSON.stringify(input.forwardTo));
-        formData.append("needToDo", JSON.stringify(input.needToDo));
-      }
+          // ✅ ForwardTo handling
+          if (Array.isArray(input.forwardTo) && input.forwardTo.length > 0) {
+            formData.append("forwardTo", JSON.stringify(input.forwardTo));
+            formData.append("needToDo", JSON.stringify(input.needToDo));
+          }
 
           if (tpEvidenceFiles && tpEvidenceFiles?.length > 0) {
             for (let i = 0; i < tpEvidenceFiles?.length; i++) {
               formData.append("files", tpEvidenceFiles[i]);
             }
           }
-          
+
           // Dispatch the Alert update action
           const result = await dispatch(updateInvestigationAlert(formData));
 
@@ -1016,7 +920,7 @@ if (
               caseDetails: "",
               tpRemedationNote: "",
               forwardTo: [],
-          needToDo: {},
+              needToDo: {},
             });
             closeModal();
             // Optionally re-fetch if needed (or just rely on state.alert)
@@ -1045,17 +949,22 @@ if (
         return;
       }
 
-            const safeForwardTo = Array.isArray(input.forwardTo) ? input.forwardTo : [];
-            const safeNeedToDo =
-        input.needToDo && typeof input.needToDo === "object" ? input.needToDo : {};
+      const safeForwardTo = Array.isArray(input.forwardTo)
+        ? input.forwardTo
+        : [];
+      const safeNeedToDo =
+        input.needToDo && typeof input.needToDo === "object"
+          ? input.needToDo
+          : {};
 
-
-        if ((safeForwardTo.length > 0 && Object.keys(safeNeedToDo).length === 0) ||
+      if (
+        (safeForwardTo.length > 0 && Object.keys(safeNeedToDo).length === 0) ||
         (safeForwardTo.length > 0 &&
-          safeForwardTo.length !== Object.keys(safeNeedToDo).length)) {
-          createToast("All fields are required");
-            return 
-        }
+          safeForwardTo.length !== Object.keys(safeNeedToDo).length)
+      ) {
+        createToast("All fields are required");
+        return;
+      }
 
       const formData = new FormData();
 
@@ -1071,15 +980,11 @@ if (
       formData.append("authorIndex", input.author.index);
       formData.append("authorRole", input.author.role);
 
-
-
-                 // ✅ ForwardTo handling
+      // ✅ ForwardTo handling
       if (Array.isArray(input.forwardTo) && input.forwardTo.length > 0) {
         formData.append("forwardTo", JSON.stringify(input.forwardTo));
         formData.append("needToDo", JSON.stringify(input.needToDo));
       }
-
-
 
       if (tpEvidenceFiles && tpEvidenceFiles?.length > 0) {
         for (let i = 0; i < tpEvidenceFiles?.length; i++) {
@@ -1143,8 +1048,8 @@ if (
 
   const handleFileShowToOtherTab = (file) => {
     const fileName = file && file;
-    const halffilepath = `http://localhost:5050/files`;
-    const filePath = `${halffilepath}/${fileName}`;
+    const baseURL = import.meta.env.VITE_APP_URL;
+    const filePath = `${baseURL}/files/${fileName}`;
     window.open(filePath, "_blank");
   };
 
@@ -1156,10 +1061,6 @@ if (
   useEffect(() => {
     dispatch(getAllAlert());
   }, [dispatch]);
-
-
-
-
 
   // useEffect(() => {
   //   if (!user?._id || !Array.isArray(alert)) return;
@@ -1306,7 +1207,7 @@ if (
       try {
         const res = await API.patch(
           `/api/v1/alert/alert_save/${input._id}`,
-          formData
+          formData,
         );
 
         if (res.data.message) {
@@ -1324,8 +1225,6 @@ if (
 
     // input.verdict === true positive and escalation no
     if (input.verdict === "true_positive" && input.escalation == "no") {
-
-      
       const formData = new FormData();
 
       formData.append("_id", input._id);
@@ -1356,7 +1255,7 @@ if (
       try {
         const res = await API.patch(
           `/api/v1/alert/alert_save/${input._id}`,
-          formData
+          formData,
         );
 
         if (res.data.message) {
@@ -1407,7 +1306,7 @@ if (
       try {
         const res = await API.patch(
           `/api/v1/alert/alert_save/${input._id}`,
-          formData
+          formData,
         );
 
         if (res.data.message) {
@@ -1438,20 +1337,20 @@ if (
       if (input.investigationFindings?.trim()) {
         formData.append(
           "investigationFindings",
-          input.investigationFindings.trim()
+          input.investigationFindings.trim(),
         );
       }
       if (input.investigationToolsUsed) {
         formData.append(
           "investigationToolsUsed",
-          input.investigationToolsUsed.trim()
+          input.investigationToolsUsed.trim(),
         );
       }
 
       try {
         const res = await API.patch(
           `/api/v1/alert/alert_level_2_save/${input._id}`,
-          formData
+          formData,
         );
 
         if (res.data.message) {
@@ -1492,21 +1391,21 @@ if (
       if (input.l2RemediationValidation) {
         formData.append(
           "l2RemediationValidation",
-          input.l2RemediationValidation.trim()
+          input.l2RemediationValidation.trim(),
         );
       }
 
       if (formatForDateTimeLocal(input.l2ResolutionTimestamp || currentDate)) {
         formData.append(
           "l2ResolutionTimestamp",
-          formatForDateTimeLocal(input.l2ResolutionTimestamp || currentDate)
+          formatForDateTimeLocal(input.l2ResolutionTimestamp || currentDate),
         );
       }
 
       try {
         const res = await API.patch(
           `/api/v1/alert/alert_level_3_save/${input._id}`,
-          formData
+          formData,
         );
 
         if (res.data.message) {
@@ -1585,7 +1484,7 @@ if (
       formData.append("alertId", input._id);
       formData.append(
         "toRoles",
-        JSON.stringify(input.forwardTo.map((item) => item.value))
+        JSON.stringify(input.forwardTo.map((item) => item.value)),
       );
       formData.append("fieldsToFill", JSON.stringify(input.needToDo));
       formData.append("tpImpact", input.tpImpact);
@@ -1642,7 +1541,7 @@ if (
       formData.append("alertId", input._id);
       formData.append(
         "toRoles",
-        JSON.stringify(input.forwardTo.map((item) => item.value))
+        JSON.stringify(input.forwardTo.map((item) => item.value)),
       );
       formData.append("fieldsToFill", JSON.stringify(input.needToDo));
       formData.append("tpImpact", input.tpImpact);
@@ -1665,7 +1564,7 @@ if (
       try {
         const res = await API.patch(
           `/api/v1/alert/forward_EscalateAlert`,
-          formData
+          formData,
         );
 
         if (res.data?.message) {
@@ -1687,7 +1586,6 @@ if (
 
   // new tailwind design
   // for table
-
 
   const [sortConfig, setSortConfig] = useState({
     key: "index",
@@ -1768,8 +1666,8 @@ if (
     if (searchTerm) {
       sortableData = sortableData.filter((item) =>
         Object.values(item).some((val) =>
-          val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          val?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
       );
     }
 
@@ -1874,7 +1772,6 @@ if (
     });
   };
 
-
   // FETCH FUNCTION
   const fetchSelfAssigned = async () => {
     try {
@@ -1882,12 +1779,12 @@ if (
       // CALL THE NEW API WITH view="self_assigned"
       const response = await API.get(
         `/api/v1/alert/paginated?page=${selectedPage.current}&limit=${limit}&view=self_assigned&search=${encodeURIComponent(
-        debouncedSearchTerm
-      )}`
+          debouncedSearchTerm,
+        )}`,
       );
 
       const { alerts, pagination } = response.data.data;
-      
+
       setData(alerts);
       setTotalPages(pagination.totalPages);
       setTotalRecords(pagination.totalAlerts);
@@ -1902,24 +1799,27 @@ if (
   // Trigger fetch on mount or page change
   useEffect(() => {
     fetchSelfAssigned();
-  }, [limit, debouncedSearchTerm, dispatch, selectedPage, alert,user._id, user.role]); // Add other dependencies if needed
-
-
-  
+  }, [
+    limit,
+    debouncedSearchTerm,
+    dispatch,
+    selectedPage,
+    alert,
+    user._id,
+    user.role,
+  ]); // Add other dependencies if needed
 
   const handlePageClick = (e) => {
     selectedPage.current = e.selected + 1;
     fetchSelfAssigned();
   };
 
-    const changeLimit = (newLimit) => {
+  const changeLimit = (newLimit) => {
     const parsedLimit = parseInt(newLimit);
     setLimit(parsedLimit);
     selectedPage.current = 1;
     fetchSelfAssigned();
   };
-
-  
 
   return (
     <>
@@ -1944,18 +1844,31 @@ if (
                 {/* <h2 className="text-lg font-bold text-white"></h2> */}
                 <div className="flex items-center gap-4">
                   <select
-                      value={limit} // keeps UI in sync with state
-                      onChange={(e) => changeLimit(e.target.value)}
-                      name="pageSize"
-                      id="pageSize"
-                      className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                    </select>
-                     <p> <span className="text-xs text-cyan-600">Showing page {selectedPage.current} of {totalPages}</span> &nbsp; <span className="font-bold text-sm text-amber-600">Alerts</span> &nbsp;: <span className="text-sm text-cyan-400">{totalRecords}</span> </p>
+                    value={limit} // keeps UI in sync with state
+                    onChange={(e) => changeLimit(e.target.value)}
+                    name="pageSize"
+                    id="pageSize"
+                    className="block w-32 rounded-md border border-cyan-800 bg-gray-800 px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                  </select>
+                  <p>
+                    {" "}
+                    <span className="text-xs text-cyan-600">
+                      Showing page {selectedPage.current} of {totalPages}
+                    </span>{" "}
+                    &nbsp;{" "}
+                    <span className="font-bold text-sm text-amber-600">
+                      Alerts
+                    </span>{" "}
+                    &nbsp;:{" "}
+                    <span className="text-sm text-cyan-400">
+                      {totalRecords}
+                    </span>{" "}
+                  </p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3  top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -1973,7 +1886,6 @@ if (
                   <table className="w-full text-left">
                     <thead className="border-b border-gray-700">
                       <tr>
-                        
                         {tableHeaders.map((header) => {
                           const key = {
                             View: null,
@@ -2014,9 +1926,7 @@ if (
                             key={index}
                             className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors "
                           >
-                            <td className="p-2 text-gray-300">
-                              { index + 1}
-                            </td>
+                            <td className="p-2 text-gray-300">{index + 1}</td>
                             <td className="p-2 font-medium text-sm text-white">
                               {item.author?.name}
                             </td>
@@ -2155,12 +2065,12 @@ if (
 
                                     {/* Unread Badge */}
                                     {unreadCountMap[item._id]?.includes(
-                                      user.role
+                                      user.role,
                                     ) && (
                                       <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
                                         {
                                           unreadCountMap[item._id]?.filter(
-                                            (r) => r === user.role
+                                            (r) => r === user.role,
                                           ).length
                                         }
                                       </span>
@@ -2196,32 +2106,29 @@ if (
                     </tbody>
                   </table>
 
-                   {/* react paginate */}
+                  {/* react paginate */}
                   <ReactPaginate
-  previousLabel="Prev"
-  nextLabel="Next"
-  breakLabel="..."
-  pageCount={totalPages}
-  pageRangeDisplayed={3}
-  marginPagesDisplayed={1}
-  onPageChange={handlePageClick}
-  // container flex row, responsive spacing
-  containerClassName="flex flex-wrap justify-center md:justify-end gap-2 mt-4"
-  
-  // li wrapper minimal
-  pageClassName="list-none"
-  previousClassName="list-none"
-  nextClassName="list-none"
-  breakClassName="list-none"
-
-  // clickable <a> styles
-  pageLinkClassName="px-2 py-1 text-xs md:text-sm border rounded hover:bg-gray-100 cursor-pointer block"
-  previousLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
-  nextLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
-  breakLinkClassName="px-2 py-1 text-xs border rounded cursor-default block"
-
-  activeClassName="bg-blue-500 text-white"
-/>
+                    previousLabel="Prev"
+                    nextLabel="Next"
+                    breakLabel="..."
+                    pageCount={totalPages}
+                    pageRangeDisplayed={3}
+                    marginPagesDisplayed={1}
+                    onPageChange={handlePageClick}
+                    // container flex row, responsive spacing
+                    containerClassName="flex flex-wrap justify-center md:justify-end gap-2 mt-4"
+                    // li wrapper minimal
+                    pageClassName="list-none"
+                    previousClassName="list-none"
+                    nextClassName="list-none"
+                    breakClassName="list-none"
+                    // clickable <a> styles
+                    pageLinkClassName="px-2 py-1 text-xs md:text-sm border rounded hover:bg-gray-100 cursor-pointer block"
+                    previousLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
+                    nextLinkClassName="px-3 py-1 text-sm border rounded hover:bg-gray-100 cursor-pointer block"
+                    breakLinkClassName="px-2 py-1 text-xs border rounded cursor-default block"
+                    activeClassName="bg-blue-500 text-white"
+                  />
 
                   {/* Pagination Controls */}
                   {/* <div className="flex justify-between items-center mt-4 text-gray-300">
@@ -2682,7 +2589,7 @@ if (
                             field.key === "investigationFindings" &&
                             field.key === "investigationToolsUsed" &&
                             field.key === "incidentDeclarationRequired" &&
-                            field.key === "incidentDeclarationReason"
+                            field.key === "incidentDeclarationReason",
                         ) && (
                           <>
                             {input.isIncidence !== "yes" && (
@@ -2708,7 +2615,8 @@ if (
                                     onChange={handleInputChange}
                                     disabled={
                                       user.role === "Level_1" ||
-                                      input.isIncidence === "no" || alertView?.investigationFindings?.trim()
+                                      input.isIncidence === "no" ||
+                                      alertView?.investigationFindings?.trim()
                                     }
                                     className={`w-full border border-gray-700 rounded-md p-2 text-sm bg-transparent focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none h-20 overflow-y-auto ${
                                       user.role === "Level_1"
@@ -2734,7 +2642,8 @@ if (
                                     onChange={handleInputChange}
                                     disabled={
                                       user.role === "Level_1" ||
-                                      input.isIncidence === "no" || alertView?.investigationToolsUsed?.trim()
+                                      input.isIncidence === "no" ||
+                                      alertView?.investigationToolsUsed?.trim()
                                     }
                                     className={`w-full border border-gray-700 rounded-md p-2 text-sm bg-transparent focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none h-20 overflow-y-auto ${
                                       user.role === "Level_1"
@@ -2759,7 +2668,13 @@ if (
                                       <input
                                         type="checkbox"
                                         disabled={
-                                          input.isIncidence === "no" || alertView?.L2verdict === "true_positive"|| (alertView?.L2verdict === "false_positive" && alertView?.fieldsToFill?.length > 0) || 
+                                          input.isIncidence === "no" ||
+                                          alertView?.L2verdict ===
+                                            "true_positive" ||
+                                          (alertView?.L2verdict ===
+                                            "false_positive" &&
+                                            alertView?.fieldsToFill?.length >
+                                              0) ||
                                           input.isIncidence === "yes"
                                         }
                                         checked={
@@ -2795,8 +2710,6 @@ if (
                         {/* False Positive Section */}
                         {input.L2verdict === "false_positive" && (
                           <>
-                            
-
                             <div className="mt-4 mb-4 ">
                               {/* Forward To */}
                               <div className="mb-4">
@@ -2860,7 +2773,7 @@ if (
                                       onChange={(e) => {
                                         handleNeedToDoChange(
                                           item.value,
-                                          e.target.value
+                                          e.target.value,
                                         );
                                         e.target.style.height = "auto";
                                         e.target.style.height = `${e.target.scrollHeight}px`;
@@ -2872,31 +2785,31 @@ if (
                                 ))}
                             </div>
 
-
-                            {selectedUserRole?.length === 0 && <>
-                                   {/* Hand Back Note */}
-                            <div className="flex flex-col space-y-1 px-2 ">
-                              <label className="text-sm font-medium text-gray-200">
-                                Hand Back Note to L1 Assignee{" "}
-                                <span className="text-red-500 text-lg">*</span>
-                              </label>
-                              <textarea
-                                rows={10}
-                                name="handBackNoteToL1"
-                                value={input.handBackNoteToL1}
-                                onChange={(e) => {
-                                  handleInputChange(e);
-                                  e.target.style.height = "auto";
-                                  e.target.style.height = `${e.target.scrollHeight}px`;
-                                }}
-                                placeholder="Explain Hand Back Note Details..."
-                                className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                              />
-                            </div>
-                            
-                            </>}
-
-                           
+                            {selectedUserRole?.length === 0 && (
+                              <>
+                                {/* Hand Back Note */}
+                                <div className="flex flex-col space-y-1 px-2 ">
+                                  <label className="text-sm font-medium text-gray-200">
+                                    Hand Back Note to L1 Assignee{" "}
+                                    <span className="text-red-500 text-lg">
+                                      *
+                                    </span>
+                                  </label>
+                                  <textarea
+                                    rows={10}
+                                    name="handBackNoteToL1"
+                                    value={input.handBackNoteToL1}
+                                    onChange={(e) => {
+                                      handleInputChange(e);
+                                      e.target.style.height = "auto";
+                                      e.target.style.height = `${e.target.scrollHeight}px`;
+                                    }}
+                                    placeholder="Explain Hand Back Note Details..."
+                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                  />
+                                </div>
+                              </>
+                            )}
                           </>
                         )}
 
@@ -2918,7 +2831,9 @@ if (
                                   onChange={handleSelectChange}
                                   disabled={
                                     user.role === "Level_1" ||
-                                    input.isIncidence === "yes" || alertView?.l2RemediationPlan?.trim() || alertView?.incidentDeclarationRequired?.trim()
+                                    input.isIncidence === "yes" ||
+                                    alertView?.l2RemediationPlan?.trim() ||
+                                    alertView?.incidentDeclarationRequired?.trim()
                                   }
                                   className={`w-full border border-gray-700 rounded-md p-2 text-sm bg-gray-700 text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none ${
                                     user.role === "Level_1"
@@ -2935,38 +2850,41 @@ if (
                           </div>
                         )}
 
-                        {input.incidentDeclarationRequired === "no" && alertView?.l2RemediationPlan?.trim() && (
-                          <div className="mt-6 bg-gray-800/40 p-6 rounded-2xl border border-gray-700 shadow-md space-y-6">
-                            {/* Header */}
-                            <div>
-                              <h5 className="text-lg font-semibold text-red-500">
-                                Details Forward to L1 Assignee
-                              </h5>
-                              <hr className="border-gray-700 mt-2" />
-                            </div>
+                        {input.incidentDeclarationRequired === "no" &&
+                          alertView?.l2RemediationPlan?.trim() && (
+                            <div className="mt-6 bg-gray-800/40 p-6 rounded-2xl border border-gray-700 shadow-md space-y-6">
+                              {/* Header */}
+                              <div>
+                                <h5 className="text-lg font-semibold text-red-500">
+                                  Details Forward to L1 Assignee
+                                </h5>
+                                <hr className="border-gray-700 mt-2" />
+                              </div>
 
-                            {/* L2 Remediation Plan */}
-                            <div className="flex flex-col space-y-1">
-                              <label className="text-sm font-medium text-gray-200">
-                                L2 Remediation Plan{" "}
-                                <span className="text-red-500 text-lg">*</span>
-                              </label>
-                              <textarea
-                                rows={10}
-                                name="l2RemediationPlan"
-                                value={input.l2RemediationPlan}
-                                disabled={alertView?.l2RemediationPlan?.trim()}
-                                onChange={(e) => {
-                                  handleInputChange(e);
-                                  e.target.style.height = "auto";
-                                  e.target.style.height = `${e.target.scrollHeight}px`;
-                                }}
-                                placeholder="Planned actions (e.g., Block C2, Deploy EDR, Restore from backup...)"
-                                className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                              />
-                            </div>
+                              {/* L2 Remediation Plan */}
+                              <div className="flex flex-col space-y-1">
+                                <label className="text-sm font-medium text-gray-200">
+                                  L2 Remediation Plan{" "}
+                                  <span className="text-red-500 text-lg">
+                                    *
+                                  </span>
+                                </label>
+                                <textarea
+                                  rows={10}
+                                  name="l2RemediationPlan"
+                                  value={input.l2RemediationPlan}
+                                  disabled={alertView?.l2RemediationPlan?.trim()}
+                                  onChange={(e) => {
+                                    handleInputChange(e);
+                                    e.target.style.height = "auto";
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                  }}
+                                  placeholder="Planned actions (e.g., Block C2, Deploy EDR, Restore from backup...)"
+                                  className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                              </div>
 
-                            {/* Forward To
+                              {/* Forward To
                             <div className="flex flex-col space-y-1">
                               <label className="text-sm font-medium text-gray-200">
                                 Forward To
@@ -3011,8 +2929,8 @@ if (
                               />
                             </div> */}
 
-                            {/* Dynamic user role textareas */}
-                            {/* {Array.isArray(selectedUserRole) &&
+                              {/* Dynamic user role textareas */}
+                              {/* {Array.isArray(selectedUserRole) &&
                               selectedUserRole.map((item) => (
                                 <div
                                   key={item.value}
@@ -3042,304 +2960,294 @@ if (
                                 </div>
                               ))} */}
 
+                              {alertView?.l2RemediationPlan?.trim() && (
+                                <>
+                                  {/* L2 Remediation Validation */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      L2 Remediation Validation{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="l2RemediationValidation"
+                                      value={input.l2RemediationValidation}
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="How L2 validated execution (e.g., Checked firewall logs for block...)"
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
 
-                          
-
-                            {alertView?.l2RemediationPlan?.trim() && (
-                              <>
-                                {/* L2 Remediation Validation */}
-                                <div className="flex flex-col space-y-1">
-                                  <label className="text-sm font-medium text-gray-200">
-                                    L2 Remediation Validation{" "}
-                                    <span className="text-red-500 text-lg">
-                                      *
-                                    </span>
-                                  </label>
-                                  <textarea
-                                    rows={10}
-                                    name="l2RemediationValidation"
-                                    value={input.l2RemediationValidation}
-                                    onChange={(e) => {
-                                      handleInputChange(e);
-                                      e.target.style.height = "auto";
-                                      e.target.style.height = `${e.target.scrollHeight}px`;
-                                    }}
-                                    placeholder="How L2 validated execution (e.g., Checked firewall logs for block...)"
-                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                  />
-                                </div>
-
-                                {/* Hand Back Note */}
-                                <div className="flex flex-col space-y-1">
-                                  <label className="text-sm font-medium text-gray-200">
-                                    Hand Back Note to L1 Assignee{" "}
-                                    <span className="text-red-500 text-lg">
-                                      *
-                                    </span>
-                                  </label>
-                                  <textarea
-                                    rows={10}
-                                    name="handBackNoteToL1"
-                                    value={input.handBackNoteToL1}
-                                    onChange={(e) => {
-                                      handleInputChange(e);
-                                      e.target.style.height = "auto";
-                                      e.target.style.height = `${e.target.scrollHeight}px`;
-                                    }}
-                                    placeholder="Explain Hand Back Note Details..."
-                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                  />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
-
-
-                        {input.incidentDeclarationRequired === "no" && !alertView.l2RemediationPlan?.trim() && (
-                          <div className="mt-6 bg-gray-800/40 p-6 rounded-2xl border border-gray-700 shadow-md space-y-6">
-                            {/* Header */}
-                            <div>
-                              <h5 className="text-lg font-semibold text-red-500">
-                                Details Forward to L1 Assignee
-                              </h5>
-                              <hr className="border-gray-700 mt-2" />
+                                  {/* Hand Back Note */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      Hand Back Note to L1 Assignee{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="handBackNoteToL1"
+                                      value={input.handBackNoteToL1}
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="Explain Hand Back Note Details..."
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
+                                </>
+                              )}
                             </div>
+                          )}
 
-                            {/* L2 Remediation Plan */}
-                            <div className="flex flex-col space-y-1">
-                              <label className="text-sm font-medium text-gray-200">
-                                L2 Remediation Plan{" "}
-                                <span className="text-red-500 text-lg">*</span>
-                              </label>
-                              <textarea
-                                rows={10}
-                                name="l2RemediationPlan"
-                                value={input.l2RemediationPlan}
-                                disabled={alertView.l2RemediationPlan?.trim()}
-                                onChange={(e) => {
-                                  handleInputChange(e);
-                                  e.target.style.height = "auto";
-                                  e.target.style.height = `${e.target.scrollHeight}px`;
-                                }}
-                                placeholder="Planned actions (e.g., Block C2, Deploy EDR, Restore from backup...)"
-                                className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                              />
-                            </div>
+                        {input.incidentDeclarationRequired === "no" &&
+                          !alertView.l2RemediationPlan?.trim() && (
+                            <div className="mt-6 bg-gray-800/40 p-6 rounded-2xl border border-gray-700 shadow-md space-y-6">
+                              {/* Header */}
+                              <div>
+                                <h5 className="text-lg font-semibold text-red-500">
+                                  Details Forward to L1 Assignee
+                                </h5>
+                                <hr className="border-gray-700 mt-2" />
+                              </div>
 
-                            {/* Forward To */}
-                            <div className="flex flex-col space-y-1">
-                              <label className="text-sm font-medium text-gray-200">
-                                Forward To
-                              </label>
-                              <Select
-                                options={options}
-                                isMulti
-                                isClearable
-                                value={input.forwardTo}
-                                onChange={handleSelectChange2}
-                                className="text-gray-900 text-sm"
-                                styles={{
-                                  control: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#1f2937", // Tailwind gray-800
-                                    borderColor: "#374151", // Tailwind gray-700
-                                  }),
-                                  menu: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#1f2937", // Set dropdown background
-                                    color: "#e5e7eb", // Tailwind gray-200 for text
-                                  }),
-                                  menuList: (base) => ({
-                                    ...base,
-                                    backgroundColor: "#1f2937", // dropdown scrollable area
-                                    maxHeight: "200px",
-                                  }),
-                                  option: (base, state) => ({
-                                    ...base,
-                                    backgroundColor: state.isFocused
-                                      ? "#374151" // Tailwind gray-700 when hovered
-                                      : "#1f2937", // Default bg
-                                    color: state.isSelected
-                                      ? "#22d3ee"
-                                      : "#e5e7eb", // Selected text color cyan-400
-                                  }),
-                                  menuPortal: (base) => ({
-                                    ...base,
-                                    zIndex: 9999,
-                                  }),
-                                }}
-                              />
-                            </div>
+                              {/* L2 Remediation Plan */}
+                              <div className="flex flex-col space-y-1">
+                                <label className="text-sm font-medium text-gray-200">
+                                  L2 Remediation Plan{" "}
+                                  <span className="text-red-500 text-lg">
+                                    *
+                                  </span>
+                                </label>
+                                <textarea
+                                  rows={10}
+                                  name="l2RemediationPlan"
+                                  value={input.l2RemediationPlan}
+                                  disabled={alertView.l2RemediationPlan?.trim()}
+                                  onChange={(e) => {
+                                    handleInputChange(e);
+                                    e.target.style.height = "auto";
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                  }}
+                                  placeholder="Planned actions (e.g., Block C2, Deploy EDR, Restore from backup...)"
+                                  className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                              </div>
 
-                            {/* Dynamic user role textareas */}
-                            {Array.isArray(selectedUserRole) &&
-                              selectedUserRole.map((item) => (
-                                <div
-                                  key={item.value}
-                                  className="flex flex-col space-y-1"
-                                >
-                                  <label
-                                    htmlFor={`needToDo-${item.value}`}
-                                    className="text-sm font-medium text-red-400"
+                              {/* Forward To */}
+                              <div className="flex flex-col space-y-1">
+                                <label className="text-sm font-medium text-gray-200">
+                                  Forward To
+                                </label>
+                                <Select
+                                  options={options}
+                                  isMulti
+                                  isClearable
+                                  value={input.forwardTo}
+                                  onChange={handleSelectChange2}
+                                  className="text-gray-900 text-sm"
+                                  styles={{
+                                    control: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // Tailwind gray-800
+                                      borderColor: "#374151", // Tailwind gray-700
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // Set dropdown background
+                                      color: "#e5e7eb", // Tailwind gray-200 for text
+                                    }),
+                                    menuList: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // dropdown scrollable area
+                                      maxHeight: "200px",
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      backgroundColor: state.isFocused
+                                        ? "#374151" // Tailwind gray-700 when hovered
+                                        : "#1f2937", // Default bg
+                                      color: state.isSelected
+                                        ? "#22d3ee"
+                                        : "#e5e7eb", // Selected text color cyan-400
+                                    }),
+                                    menuPortal: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                    }),
+                                  }}
+                                />
+                              </div>
+
+                              {/* Dynamic user role textareas */}
+                              {Array.isArray(selectedUserRole) &&
+                                selectedUserRole.map((item) => (
+                                  <div
+                                    key={item.value}
+                                    className="flex flex-col space-y-1"
                                   >
-                                    {`${item.value}: Actions Need to Perform`}
-                                  </label>
-                                  <textarea
-                                    id={`needToDo-${item.value}`}
-                                    rows={10}
-                                    value={input.needToDo?.[item.value] || ""}
-                                    onChange={(e) => {
-                                      handleNeedToDoChange(
-                                        item.value,
-                                        e.target.value
-                                      );
-                                      e.target.style.height = "auto";
-                                      e.target.style.height = `${e.target.scrollHeight}px`;
-                                    }}
-                                    placeholder="Write Down What Should Need to do"
-                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                  />
-                                </div>
-                              ))}
+                                    <label
+                                      htmlFor={`needToDo-${item.value}`}
+                                      className="text-sm font-medium text-red-400"
+                                    >
+                                      {`${item.value}: Actions Need to Perform`}
+                                    </label>
+                                    <textarea
+                                      id={`needToDo-${item.value}`}
+                                      rows={10}
+                                      value={input.needToDo?.[item.value] || ""}
+                                      onChange={(e) => {
+                                        handleNeedToDoChange(
+                                          item.value,
+                                          e.target.value,
+                                        );
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="Write Down What Should Need to do"
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
+                                ))}
 
+                              {selectedUserRole?.length === 0 && (
+                                <>
+                                  {/* L2 Remediation Validation */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      L2 Remediation Validation{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="l2RemediationValidation"
+                                      value={input.l2RemediationValidation}
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="How L2 validated execution (e.g., Checked firewall logs for block...)"
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
 
-                              {selectedUserRole?.length === 0 && <>
-                              
-                               {/* L2 Remediation Validation */}
-                                <div className="flex flex-col space-y-1">
-                                  <label className="text-sm font-medium text-gray-200">
-                                    L2 Remediation Validation{" "}
-                                    <span className="text-red-500 text-lg">
-                                      *
-                                    </span>
-                                  </label>
-                                  <textarea
-                                    rows={10}
-                                    name="l2RemediationValidation"
-                                    value={input.l2RemediationValidation}
-                                    onChange={(e) => {
-                                      handleInputChange(e);
-                                      e.target.style.height = "auto";
-                                      e.target.style.height = `${e.target.scrollHeight}px`;
-                                    }}
-                                    placeholder="How L2 validated execution (e.g., Checked firewall logs for block...)"
-                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                  />
-                                </div>
-
-                                {/* Hand Back Note */}
-                                <div className="flex flex-col space-y-1">
-                                  <label className="text-sm font-medium text-gray-200">
-                                    Hand Back Note to L1 Assignee{" "}
-                                    <span className="text-red-500 text-lg">
-                                      *
-                                    </span>
-                                  </label>
-                                  <textarea
-                                    rows={10}
-                                    name="handBackNoteToL1"
-                                    value={input.handBackNoteToL1}
-                                    onChange={(e) => {
-                                      handleInputChange(e);
-                                      e.target.style.height = "auto";
-                                      e.target.style.height = `${e.target.scrollHeight}px`;
-                                    }}
-                                    placeholder="Explain Hand Back Note Details..."
-                                    className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                  />
-                                </div>
-                              </>}
-
-                            
-
-                            
-                          </div>
-                        )}
+                                  {/* Hand Back Note */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      Hand Back Note to L1 Assignee{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="handBackNoteToL1"
+                                      value={input.handBackNoteToL1}
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="Explain Hand Back Note Details..."
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
 
                         {input.incidentDeclarationRequired === "yes" &&
                           input.isIncidence === "pending" && (
                             <div className="mt-4 bg-gray-800/40 p-3 rounded-2xl border border-gray-700 shadow-md space-y-4">
+                              {/* Forward To */}
+                              <div className="flex flex-col space-y-1">
+                                <label className="text-sm font-medium text-gray-200">
+                                  Forward To
+                                </label>
+                                <Select
+                                  options={options}
+                                  isMulti
+                                  isClearable
+                                  value={input.forwardTo}
+                                  onChange={handleSelectChange2}
+                                  className="text-gray-900 text-sm"
+                                  styles={{
+                                    control: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // Tailwind gray-800
+                                      borderColor: "#374151", // Tailwind gray-700
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // Set dropdown background
+                                      color: "#e5e7eb", // Tailwind gray-200 for text
+                                    }),
+                                    menuList: (base) => ({
+                                      ...base,
+                                      backgroundColor: "#1f2937", // dropdown scrollable area
+                                      maxHeight: "200px",
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      backgroundColor: state.isFocused
+                                        ? "#374151" // Tailwind gray-700 when hovered
+                                        : "#1f2937", // Default bg
+                                      color: state.isSelected
+                                        ? "#22d3ee"
+                                        : "#e5e7eb", // Selected text color cyan-400
+                                    }),
+                                    menuPortal: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                    }),
+                                  }}
+                                />
+                              </div>
 
-                               {/* Forward To */}
-                                <div className="flex flex-col space-y-1">
-                                  <label className="text-sm font-medium text-gray-200">
-                                    Forward To
-                                  </label>
-                                  <Select
-                                    options={options}
-                                    isMulti
-                                    isClearable
-                                    value={input.forwardTo}
-                                    onChange={handleSelectChange2}
-                                    className="text-gray-900 text-sm"
-                                    styles={{
-                                      control: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#1f2937", // Tailwind gray-800
-                                        borderColor: "#374151", // Tailwind gray-700
-                                      }),
-                                      menu: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#1f2937", // Set dropdown background
-                                        color: "#e5e7eb", // Tailwind gray-200 for text
-                                      }),
-                                      menuList: (base) => ({
-                                        ...base,
-                                        backgroundColor: "#1f2937", // dropdown scrollable area
-                                        maxHeight: "200px",
-                                      }),
-                                      option: (base, state) => ({
-                                        ...base,
-                                        backgroundColor: state.isFocused
-                                          ? "#374151" // Tailwind gray-700 when hovered
-                                          : "#1f2937", // Default bg
-                                        color: state.isSelected
-                                          ? "#22d3ee"
-                                          : "#e5e7eb", // Selected text color cyan-400
-                                      }),
-                                      menuPortal: (base) => ({
-                                        ...base,
-                                        zIndex: 9999,
-                                      }),
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Dynamic user role textareas */}
-                                {Array.isArray(selectedUserRole) &&
-                                  selectedUserRole.map((item) => (
-                                    <div
-                                      key={item.value}
-                                      className="flex flex-col space-y-1"
+                              {/* Dynamic user role textareas */}
+                              {Array.isArray(selectedUserRole) &&
+                                selectedUserRole.map((item) => (
+                                  <div
+                                    key={item.value}
+                                    className="flex flex-col space-y-1"
+                                  >
+                                    <label
+                                      htmlFor={`needToDo-${item.value}`}
+                                      className="text-sm font-medium text-red-400"
                                     >
-                                      <label
-                                        htmlFor={`needToDo-${item.value}`}
-                                        className="text-sm font-medium text-red-400"
-                                      >
-                                        {`${item.value}: Actions Need to Perform`}
-                                      </label>
-                                      <textarea
-                                        id={`needToDo-${item.value}`}
-                                        rows={10}
-                                        value={
-                                          input.needToDo?.[item.value] || ""
-                                        }
-                                        onChange={(e) => {
-                                          handleNeedToDoChange(
-                                            item.value,
-                                            e.target.value
-                                          );
-                                          e.target.style.height = "auto";
-                                          e.target.style.height = `${e.target.scrollHeight}px`;
-                                        }}
-                                        placeholder="Write Down What Should Need to do"
-                                        className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                      />
-                                    </div>
-                                  ))}
-
-
+                                      {`${item.value}: Actions Need to Perform`}
+                                    </label>
+                                    <textarea
+                                      id={`needToDo-${item.value}`}
+                                      rows={10}
+                                      value={input.needToDo?.[item.value] || ""}
+                                      onChange={(e) => {
+                                        handleNeedToDoChange(
+                                          item.value,
+                                          e.target.value,
+                                        );
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      placeholder="Write Down What Should Need to do"
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
+                                ))}
 
                               <div className="flex flex-col space-y-1">
                                 <label className="text-sm font-medium text-gray-200">
@@ -3467,7 +3375,7 @@ if (
                                         onChange={(e) => {
                                           handleNeedToDoChange(
                                             item.value,
-                                            e.target.value
+                                            e.target.value,
                                           );
                                           e.target.style.height = "auto";
                                           e.target.style.height = `${e.target.scrollHeight}px`;
@@ -3478,10 +3386,9 @@ if (
                                     </div>
                                   ))}
 
-
-                                  {selectedUserRole.length ===  0 && 
+                                {selectedUserRole.length === 0 && (
                                   <>
-                                       {/* L2 Remediation Validation */}
+                                    {/* L2 Remediation Validation */}
                                     <div className="flex flex-col space-y-1">
                                       <label className="text-sm font-medium text-gray-200">
                                         L2 Remediation Validation{" "}
@@ -3525,16 +3432,10 @@ if (
                                       />
                                     </div>
                                   </>
-                                  
-                                  }
-
-                                 
-
-
-
+                                )}
                               </div>
                             </>
-                        )}
+                          )}
 
                         {input.incidentDeclarationRequired === "yes" &&
                           input.isIncidence === "yes" && (
@@ -3613,58 +3514,51 @@ if (
                                 />
                               </div>
 
-
-
-                            
-                              
                               <>
-                                 {/* Forward To */}
-                              <div className="flex flex-col space-y-1">
-                                <label className="text-sm font-medium text-gray-200">
-                                  Forward To
-                                </label>
-                                <Select
-                                  styles={{
-                                    control: (base) => ({
-                                      ...base,
-                                      backgroundColor: "#1f2937", // Tailwind gray-800
-                                      borderColor: "#374151", // Tailwind gray-700
-                                    }),
-                                    menu: (base) => ({
-                                      ...base,
-                                      backgroundColor: "#1f2937", // Set dropdown background
-                                      color: "#e5e7eb", // Tailwind gray-200 for text
-                                    }),
-                                    menuList: (base) => ({
-                                      ...base,
-                                      backgroundColor: "#1f2937", // dropdown scrollable area
-                                      maxHeight: "200px",
-                                    }),
-                                    option: (base, state) => ({
-                                      ...base,
-                                      backgroundColor: state.isFocused
-                                        ? "#374151" // Tailwind gray-700 when hovered
-                                        : "#1f2937", // Default bg
-                                      color: state.isSelected
-                                        ? "#22d3ee"
-                                        : "#e5e7eb", // Selected text color cyan-400
-                                    }),
-                                    menuPortal: (base) => ({
-                                      ...base,
-                                      zIndex: 9999,
-                                    }),
-                                  }}
-                                  options={options}
-                                  isMulti
-                                  isClearable
-                                  value={input.forwardTo}
-                                  onChange={handleSelectChange2}
-                                />
-                              </div>
+                                {/* Forward To */}
+                                <div className="flex flex-col space-y-1">
+                                  <label className="text-sm font-medium text-gray-200">
+                                    Forward To
+                                  </label>
+                                  <Select
+                                    styles={{
+                                      control: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#1f2937", // Tailwind gray-800
+                                        borderColor: "#374151", // Tailwind gray-700
+                                      }),
+                                      menu: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#1f2937", // Set dropdown background
+                                        color: "#e5e7eb", // Tailwind gray-200 for text
+                                      }),
+                                      menuList: (base) => ({
+                                        ...base,
+                                        backgroundColor: "#1f2937", // dropdown scrollable area
+                                        maxHeight: "200px",
+                                      }),
+                                      option: (base, state) => ({
+                                        ...base,
+                                        backgroundColor: state.isFocused
+                                          ? "#374151" // Tailwind gray-700 when hovered
+                                          : "#1f2937", // Default bg
+                                        color: state.isSelected
+                                          ? "#22d3ee"
+                                          : "#e5e7eb", // Selected text color cyan-400
+                                      }),
+                                      menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 9999,
+                                      }),
+                                    }}
+                                    options={options}
+                                    isMulti
+                                    isClearable
+                                    value={input.forwardTo}
+                                    onChange={handleSelectChange2}
+                                  />
+                                </div>
                               </>
-                            
-
-                             
 
                               {/* Actions Need to Perform */}
                               {Array.isArray(selectedUserRole) &&
@@ -3685,7 +3579,7 @@ if (
                                       onChange={(e) => {
                                         handleNeedToDoChange(
                                           item.value,
-                                          e.target.value
+                                          e.target.value,
                                         );
                                         e.target.style.height = "auto";
                                         e.target.style.height = `${e.target.scrollHeight}px`;
@@ -3696,58 +3590,53 @@ if (
                                   </div>
                                 ))}
 
-
-                                {selectedUserRole.length === 0 && 
+                              {selectedUserRole.length === 0 && (
                                 <>
-                                {/* L2 Remediation Validation */}
-                              <div className="flex flex-col space-y-1">
-                                <label className="text-sm font-medium text-gray-200">
-                                  L2 Remediation Validation{" "}
-                                  <span className="text-red-500 text-lg">
-                                    *
-                                  </span>
-                                </label>
-                                <textarea
-                                  rows={10}
-                                  name="l2RemediationValidation"
-                                  value={input.l2RemediationValidation}
-                                  placeholder="How L2 validated execution (e.g., Checked firewall logs for block)"
-                                  onChange={(e) => {
-                                    handleInputChange(e);
-                                    e.target.style.height = "auto";
-                                    e.target.style.height = `${e.target.scrollHeight}px`;
-                                  }}
-                                  className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                              </div>
+                                  {/* L2 Remediation Validation */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      L2 Remediation Validation{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="l2RemediationValidation"
+                                      value={input.l2RemediationValidation}
+                                      placeholder="How L2 validated execution (e.g., Checked firewall logs for block)"
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
 
-                              {/* Hand Back Note */}
-                              <div className="flex flex-col space-y-1">
-                                <label className="text-sm font-medium text-gray-200">
-                                  Hand Back Note to L1 Assignee{" "}
-                                  <span className="text-red-500 text-lg">
-                                    *
-                                  </span>
-                                </label>
-                                <textarea
-                                  rows={10}
-                                  name="handBackNoteToL1"
-                                  value={input.handBackNoteToL1}
-                                  placeholder="Explain Hand Back Note Details..."
-                                  onChange={(e) => {
-                                    handleInputChange(e);
-                                    e.target.style.height = "auto";
-                                    e.target.style.height = `${e.target.scrollHeight}px`;
-                                  }}
-                                  className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                              </div>
+                                  {/* Hand Back Note */}
+                                  <div className="flex flex-col space-y-1">
+                                    <label className="text-sm font-medium text-gray-200">
+                                      Hand Back Note to L1 Assignee{" "}
+                                      <span className="text-red-500 text-lg">
+                                        *
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      rows={10}
+                                      name="handBackNoteToL1"
+                                      value={input.handBackNoteToL1}
+                                      placeholder="Explain Hand Back Note Details..."
+                                      onChange={(e) => {
+                                        handleInputChange(e);
+                                        e.target.style.height = "auto";
+                                        e.target.style.height = `${e.target.scrollHeight}px`;
+                                      }}
+                                      className="w-full bg-transparent text-gray-200 border border-gray-700 rounded-xl p-3 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                  </div>
                                 </>
-
-                                }
-
-                              
-                              
+                              )}
                             </div>
                           )}
 
@@ -3774,13 +3663,13 @@ if (
                                       ? "bg-gray-500 cursor-not-allowed"
                                       : "bg-cyan-600 hover:bg-cyan-700"
                                     : input.incidentDeclarationRequired ===
-                                        "yes" ||
-                                      input.incidentDeclarationRequired ===
-                                        "no" ||
-                                      input.handBackNoteToL1?.trim() ||
-                                      input.handBackToL1Assignee
-                                    ? "bg-gray-500 cursor-not-allowed"
-                                    : "bg-cyan-600 hover:bg-cyan-700"
+                                          "yes" ||
+                                        input.incidentDeclarationRequired ===
+                                          "no" ||
+                                        input.handBackNoteToL1?.trim() ||
+                                        input.handBackToL1Assignee
+                                      ? "bg-gray-500 cursor-not-allowed"
+                                      : "bg-cyan-600 hover:bg-cyan-700"
                                 }`}
                                 disabled={
                                   input.isIncidence === "yes"
@@ -3913,7 +3802,7 @@ if (
                           <div>
                             <strong>Accepted Time:</strong>{" "}
                             {formatDateTimeReadable(
-                              alertView.acceptedTime || ""
+                              alertView.acceptedTime || "",
                             )}
                           </div>
                           <div>
@@ -4345,7 +4234,6 @@ if (
                               <label className="flex items-center cursor-pointer">
                                 <input
                                   type="checkbox"
-                             
                                   className="sr-only peer"
                                   checked={input.escalation === "yes"}
                                   onChange={(e) =>
@@ -4366,22 +4254,11 @@ if (
                               </span>
                             </div>
 
-
-
-
-
-
-
-
-
-
                             {/* forword To Section start  */}
 
-
-                                  {alertView?.fieldsToFill?.length === 0 && <>
-                                  
-                                  
-                                     {/* Forward To Dropdown */}
+                            {alertView?.fieldsToFill?.length === 0 && (
+                              <>
+                                {/* Forward To Dropdown */}
                                 <div className="mb-4">
                                   <label className="block text-gray-200 font-medium mb-2">
                                     Forward To
@@ -4426,8 +4303,7 @@ if (
                                   />
                                 </div>
 
-                                    
-                                 {/* Dynamic Role Fields */}
+                                {/* Dynamic Role Fields */}
                                 {Array.isArray(selectedUserRole) &&
                                   selectedUserRole.map((item) => (
                                     <div key={item.value} className="mb-2">
@@ -4442,7 +4318,7 @@ if (
                                         onChange={(e) => {
                                           handleNeedToDoChange(
                                             item.value,
-                                            e.target.value
+                                            e.target.value,
                                           );
                                           e.target.style.height = "auto";
                                           e.target.style.height = `${e.target.scrollHeight}px`;
@@ -4452,22 +4328,8 @@ if (
                                       />
                                     </div>
                                   ))}
-                                  
-                                  </> }
-
-                                   
-
-
-
-
-
-
-
-
-
-
-
-
+                              </>
+                            )}
 
                             {/* forword To Section end */}
 
@@ -4578,7 +4440,7 @@ if (
                                         onChange={(e) => {
                                           handleNeedToDoChange(
                                             item.value,
-                                            e.target.value
+                                            e.target.value,
                                           );
                                           e.target.style.height = "auto";
                                           e.target.style.height = `${e.target.scrollHeight}px`;
@@ -4591,52 +4453,41 @@ if (
                               </>
                             )}
 
+                            {selectedUserRole?.length === 0 && (
+                              <>
+                                {/* FP Closure Note */}
+                                <div className="mt-4">
+                                  <label className="flex items-center justify-between font-medium text-gray-200 mb-2">
+                                    <span>FP Closure Note</span>
+                                    <small
+                                      className={`text-xs ${
+                                        wordCount === 50
+                                          ? "text-green-400"
+                                          : "text-red-400"
+                                      }`}
+                                    >
+                                      ({wordCount}/50 words)
+                                    </small>
+                                  </label>
 
-
-
-                            {selectedUserRole?.length === 0 && 
-                            
-                            <>
-                                   {/* FP Closure Note */}
-                            <div className="mt-4">
-                              <label className="flex items-center justify-between font-medium text-gray-200 mb-2">
-                                <span>FP Closure Note</span>
-                                <small
-                                  className={`text-xs ${
-                                    wordCount === 50
-                                      ? "text-green-400"
-                                      : "text-red-400"
-                                  }`}
-                                >
-                                  ({wordCount}/50 words)
-                                </small>
-                              </label>
-
-                              <textarea
-                                rows={8}
-                                value={input?.fpNote || ""}
-                                onChange={(e) => {
-                                  handleFpNoteChange(e);
-                                  e.target.style.height = "auto";
-                                  e.target.style.height = `${e.target.scrollHeight}px`;
-                                }}
-                                placeholder="Explain why it's a false positive... (approx. 50 words)"
-                                className={`w-full border ${
-                                  isFpValid
-                                    ? "border-green-500"
-                                    : "border-red-500"
-                                } bg-transparent text-gray-200 p-3 text-sm rounded-lg resize-none focus:ring-1 focus:ring-cyan-500 focus:outline-none`}
-                              />
-                            </div>
-                            </>
-                            }
-
-                           
-
-
-
-
-
+                                  <textarea
+                                    rows={8}
+                                    value={input?.fpNote || ""}
+                                    onChange={(e) => {
+                                      handleFpNoteChange(e);
+                                      e.target.style.height = "auto";
+                                      e.target.style.height = `${e.target.scrollHeight}px`;
+                                    }}
+                                    placeholder="Explain why it's a false positive... (approx. 50 words)"
+                                    className={`w-full border ${
+                                      isFpValid
+                                        ? "border-green-500"
+                                        : "border-red-500"
+                                    } bg-transparent text-gray-200 p-3 text-sm rounded-lg resize-none focus:ring-1 focus:ring-cyan-500 focus:outline-none`}
+                                  />
+                                </div>
+                              </>
+                            )}
                           </div>
                         )}
 
@@ -4659,7 +4510,7 @@ if (
                               <div>
                                 <strong>Investigation End Time:</strong>{" "}
                                 {formatDateTimeReadable(
-                                  alertView.investigationEndTime
+                                  alertView.investigationEndTime,
                                 )}
                               </div>
                               <div>
